@@ -1,31 +1,51 @@
-const fetch    = require("node-fetch");
+// netlify/functions/uploadToPinata.js
+const fetch = require("node-fetch");
 const FormData = require("form-data");
 
-exports.handler = async (event) => {
+exports.handler = async function(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
+
   const jwt = process.env.PINATA_JWT;
   if (!jwt) {
-    return { statusCode: 500, body: JSON.stringify({ error: "Missing PINATA_JWT" }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Missing PINATA_JWT env var" }),
+    };
   }
+
   try {
+    // event.body is a base64 data‑URI string: "data:image/png;base64,...."
     const base64 = event.body.split(",")[1];
-    const buffer = Buffer.from(base64, "base64");
+    const buf = Buffer.from(base64, "base64");
+
     const form = new FormData();
-    form.append("file", buffer, {
+    form.append("file", buf, {
       filename: `snapshot-${Date.now()}.png`,
-      contentType: "image/png"
+      contentType: "image/png",
     });
-    const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+
+    const resp = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
       headers: { Authorization: `Bearer ${jwt}` },
-      body: form
+      body: form,
     });
-    const result = await response.json();
-    return { statusCode: 200, body: JSON.stringify({ IpfsHash: result.IpfsHash }) };
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error("Pinata error:", err);
+      throw new Error("Pinata upload failed");
+    }
+
+    const { IpfsHash } = await resp.json();
+    return { statusCode: 200, body: JSON.stringify({ IpfsHash }) };
+
   } catch (err) {
-    console.error("Upload error", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "Upload failed" }) };
+    console.error(err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
   }
 };
