@@ -2,39 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
   <title>Match and Mint</title>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
-  <h1>🧩 Match and Mint</h1>
+  <header>
+    <h1>🧩 Match and Mint</h1>
+    <button id="connect-btn">🔌 Connect Wallet</button>
+    <span id="wallet-address"></span>
+  </header>
 
   <section id="instructions">
     <h2>📝 How to Play</h2>
     <ol>
-      <li>Click “Connect Wallet” (top right).</li>
-      <li>Switch to <strong>Monad Testnet</strong> (Chain ID <code>10143</code>).</li>
-      <li>Press “Start Game”.</li>
-      <li>Rearrange the 4×4 puzzle before time runs out.</li>
-      <li>You can <strong>Mint</strong> any time after solving, or we’ll prompt you at timeout.</li>
+      <li>Connect wallet.</li>
+      <li>Ensure you’re on <strong>Monad Testnet</strong> (Chain ID <code>10143</code>).</li>
+      <li>Click “Start Game.”</li>
+      <li>Rearrange pieces to match the preview image.</li>
+      <li>You can click “Mint Now” as soon as you finish—or if time runs out, we’ll prompt you.</li>
     </ol>
   </section>
 
-  <div class="top-bar">
-    <button id="connect-btn">🔌 Connect Wallet</button>
-    <span id="wallet-address"></span>
+  <div id="controls">
+    <button id="start-btn" disabled>🎮 Start Game</button>
+    <button id="mint-btn" disabled>🪙 Mint Now</button>
+    <div>⏱ Time Left: <span id="timer">45</span>s</div>
   </div>
 
-  <button id="start-btn" disabled>🎮 Start Game</button>
-  <button id="mint-btn" disabled>🪙 Mint NFT</button>
-  <p>⏱ Time Left: <span id="timer">45</span>s</p>
-
   <div id="puzzle-board"></div>
-  <img id="sample-image" alt="Puzzle Preview"/>
+  <img id="sample-image" alt="Puzzle preview" />
 
-  <noscript><p style="color:red">⚠️ JavaScript is required.</p></noscript>
+  <noscript>
+    <p style="color:red;">JavaScript is required.</p>
+  </noscript>
+
   <script src="script.js"></script>
 </body>
 </html>
