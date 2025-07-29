@@ -1,36 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Match & Mint</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Match and Mint</title>
   <link rel="stylesheet" href="style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://unpkg.com/nft.storage/dist/bundle.umd.min.js"></script>
 </head>
 <body>
-  <h1>🧩 Match & Mint</h1>
+  <h1>🧩 Match and Mint</h1>
+
   <section id="instructions">
-    <h2>How to Play</h2>
+    <h2>📝 How to Play</h2>
     <ol>
-      <li>Connect Wallet (Monad Testnet 📶).</li>
-      <li>Click “Start Game” and rearrange the 4×4 puzzle.</li>
-      <li>Click “Mint NFT” anytime—or when time’s up—to mint your snapshot.</li>
+      <li>Click “Connect Wallet” (top right).</li>
+      <li>Switch to <strong>Monad Testnet</strong> (Chain ID <code>10143</code>).</li>
+      <li>Press “Start Game”.</li>
+      <li>Rearrange the 4×4 puzzle before time runs out.</li>
+      <li>You can <strong>Mint</strong> any time after solving, or we’ll prompt you at timeout.</li>
     </ol>
   </section>
-  <div class="header-row">
+
+  <div class="top-bar">
     <button id="connect-btn">🔌 Connect Wallet</button>
     <span id="wallet-address"></span>
   </div>
-  <div class="controls">
-    <button id="start-btn" disabled>🎮 Start Game</button>
-    <button id="mint-btn" disabled>💎 Mint NFT</button>
-  </div>
+
+  <button id="start-btn" disabled>🎮 Start Game</button>
+  <button id="mint-btn" disabled>🪙 Mint NFT</button>
   <p>⏱ Time Left: <span id="timer">45</span>s</p>
+
   <div id="puzzle-board"></div>
-  <img id="sample-image" alt="Puzzle Preview" style="max-width:300px;margin-top:1rem;"/>
-  <noscript><p style="color:red;">⚠️ Enable JavaScript to play.</p></noscript>
+  <img id="sample-image" alt="Puzzle Preview"/>
+
+  <noscript><p style="color:red">⚠️ JavaScript is required.</p></noscript>
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,154 +1,160 @@
-// ── CONFIG ──
-const CONTRACT_ADDRESS = "0x3A800029F5E76683b2664A70CF984fBC6c9D0Db1";
-const CONTRACT_ABI = [ /* your ABI here */ ];
-const NFT_STORAGE_KEY = "YOUR_NFT_STORAGE_KEY";  // from nft.storage
+let userAddress = null, provider, signer;
+let draggedPiece = null, timer, timeLeft = 45, selectedName = "", hasMinted = true;
+const contractAddress = "0x3A800029F5E76683b2664A70CF984fBC6c9D0Db1";
+const contractABI = [
+  {
+    "inputs": [
+      { "internalType": "address", "name": "to", "type": "address" },
+      { "internalType": "string", "name": "tokenURI", "type": "string" }
+    ],
+    "name": "mintNFT",
+    "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
 
-const imageBaseURL = 
-  "https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets/images/";
+const imageBaseURL = "https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets/images/";
 let imageList = [];
 
-// ── STATE ──
-let provider, signer, userAddress;
-let timer, timeLeft=45, hasMinted=true, draggedPiece=null, selectedName="";
-
-// ── UI REFS ──
-const connectBtn  = document.getElementById("connect-btn");
-const walletDisp  = document.getElementById("wallet-address");
-const startBtn    = document.getElementById("start-btn");
-const mintBtn     = document.getElementById("mint-btn");
-const timerDisp   = document.getElementById("timer");
-const board       = document.getElementById("puzzle-board");
-const sampleImage = document.getElementById("sample-image");
-
-// ── LOAD IMAGES LIST ──
-window.addEventListener("DOMContentLoaded", async()=>{
+async function loadImageList() {
   try {
-    const res = await fetch(
-      "https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets/list.json"
-    );
+    const res = await fetch("https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets/list.json");
     imageList = await res.json();
-  } catch(e) {
+  } catch (e) {
+    alert("❌ Failed to load puzzle list");
     console.error(e);
-    alert("❌ Could not load puzzle images.");
   }
-});
+}
+window.addEventListener("DOMContentLoaded", loadImageList);
 
-// ── CONNECT WALLET ──
-connectBtn.addEventListener("click", async()=>{
-  if(!window.ethereum) return alert("Install MetaMask!");
+const connectBtn   = document.getElementById("connect-btn"),
+      walletDisplay= document.getElementById("wallet-address"),
+      startBtn     = document.getElementById("start-btn"),
+      mintBtn      = document.getElementById("mint-btn"),
+      board        = document.getElementById("puzzle-board"),
+      timerDisplay = document.getElementById("timer"),
+      sampleImage  = document.getElementById("sample-image");
+
+// Connect Wallet
+connectBtn.addEventListener("click", async () => {
+  if (!window.ethereum) return alert("Install a Web3 wallet!");
   provider = new ethers.providers.Web3Provider(window.ethereum, "any");
   await provider.send("eth_requestAccounts", []);
-  const { chainId } = await provider.getNetwork();
-  if(chainId !== 10143)
-    return alert("Switch to Monad Testnet (10143).");
+  const net = await provider.getNetwork();
+  if (net.chainId !== 10143) {
+    alert("Switch to Monad Testnet (Chain ID 10143)");
+    return;
+  }
   signer = provider.getSigner();
   userAddress = await signer.getAddress();
-  walletDisp.textContent = 
-    userAddress.slice(0,4) + "…" + userAddress.slice(-4);
+  walletDisplay.textContent = userAddress.slice(0,6) + "…" + userAddress.slice(-4);
   startBtn.disabled = false;
 });
 
-// ── START GAME ──
-startBtn.addEventListener("click", ()=>{
-  if(!hasMinted)
-    return alert("Mint your last snapshot first!");
+// Start Game
+startBtn.addEventListener("click", () => {
+  if (!hasMinted) {
+    alert("Mint your last snapshot first!");
+    return;
+  }
   beginPuzzle();
 });
 
-function beginPuzzle(){
+// Manual Mint
+mintBtn.addEventListener("click", () => {
+  if (hasMinted) return;
+  mintSnapshot();
+});
+
+// Puzzle Logic
+function beginPuzzle() {
   hasMinted = false;
   startBtn.disabled = true;
   mintBtn.disabled = true;
   board.innerHTML = "";
   timeLeft = 45;
-  timerDisp.textContent = timeLeft;
+  timerDisplay.textContent = timeLeft;
 
-  selectedName = 
-    imageList[Math.floor(Math.random()*imageList.length)];
-  const imgURL = imageBaseURL + selectedName;
-  sampleImage.src = imgURL;
+  selectedName = imageList[Math.floor(Math.random() * imageList.length)];
+  const imgUrl = imageBaseURL + selectedName;
+  sampleImage.src = imgUrl;
 
-  const positions = [];
-  for(let y=0;y<4;y++) for(let x=0;x<4;x++)
-    positions.push({x:-x*100,y:-y*100});
-  positions.sort(()=>Math.random()-.5);
+  let positions = [];
+  for (let y=0; y<4; y++) {
+    for (let x=0; x<4; x++) {
+      positions.push({ x: -x*100, y: -y*100 });
+    }
+  }
+  shuffle(positions);
 
-  positions.forEach(pos=>{
-    const d=document.createElement("div");
-    d.className = "piece";
-    d.style.backgroundImage = `url('${imgURL}')`;
-    d.style.backgroundPosition = `${pos.x}px ${pos.y}px`;
-    d.draggable = true;
-    board.appendChild(d);
+  positions.forEach(pos => {
+    const piece = document.createElement("div");
+    piece.className = "piece";
+    piece.style.backgroundImage = `url('${imgUrl}')`;
+    piece.style.backgroundPosition = `${pos.x}px ${pos.y}px`;
+    piece.draggable = true;
+    board.appendChild(piece);
   });
 
-  board.ondragstart = e=>{
-    if(e.target.classList.contains("piece"))
-      draggedPiece = e.target;
-  };
-  board.ondragover = e=>e.preventDefault();
-  board.ondrop = e=>{
-    if(!e.target.classList.contains("piece") ||
-       e.target===draggedPiece) return;
-    const tmp = document.createElement("div");
-    board.replaceChild(tmp, draggedPiece);
-    board.replaceChild(draggedPiece, e.target);
-    board.replaceChild(e.target, tmp);
-  };
-
-  timer = setInterval(()=>{
-    timeLeft--;
-    timerDisp.textContent = timeLeft;
-    if(timeLeft<=0){
-      clearInterval(timer);
-      mintBtn.disabled = false;
-      alert("⏰ Time's up! Click Mint to keep your art.");
+  board.addEventListener("dragstart", e => {
+    if (e.target.classList.contains("piece")) draggedPiece = e.target;
+  });
+  board.addEventListener("dragover", e => e.preventDefault());
+  board.addEventListener("drop", e => {
+    if (e.target.classList.contains("piece") && draggedPiece !== e.target) {
+      const tmp = document.createElement("div");
+      board.replaceChild(tmp, draggedPiece);
+      board.replaceChild(draggedPiece, e.target);
+      board.replaceChild(e.target, tmp);
     }
-  },1000);
+  });
+
+  timer = setInterval(() => {
+    timerDisplay.textContent = --timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      promptMint();
+    }
+  }, 1000);
 }
 
-// ── MINT NFT ──
-mintBtn.addEventListener("click", async()=>{
-  if(hasMinted) return alert("Already minted!");
-  const ok = confirm(
-    "This is your masterpiece—mint it as an NFT?"
-  );
-  if(!ok) return;
-
-  mintBtn.disabled = true;
-  try {
-    // snapshot board only
-    const canvas = await html2canvas(board,{backgroundColor:null});
-    const blob   = await new Promise(r=>canvas.toBlob(r,"image/png"));
-
-    // pin via nft.storage
-    const client = new NFTStorage({ token: NFT_STORAGE_KEY });
-    const metadata = await client.store({
-      image: new File([blob],`snapshot-${Date.now()}.png`,
-                      { type:"image/png" }),
-      name: `Puzzle: ${selectedName}`,
-      description: "Match & Mint snapshot"
-    });
-
-    // on‑chain mint
-    const contract = new ethers.Contract(
-      CONTRACT_ADDRESS, CONTRACT_ABI, signer
-    );
-    const tx = await contract.mintNFT(
-      userAddress, metadata.url
-    );
-    await tx.wait();
-
-    alert("✅ Minted! " + metadata.url);
-    hasMinted = true;
-  } catch(err){
-    console.error(err);
-    alert("❌ Mint failed—see console.");
+function promptMint() {
+  [...board.querySelectorAll(".piece")].forEach(p=>p.draggable = false);
+  if (confirm("Time’s up! This is your masterpiece—mint it as an NFT?")) {
+    mintSnapshot();
   }
-});
+  startBtn.disabled = false;
+}
 
-// ── UTILS ──
-function shuffle(a){for(let i=a.length-1;i>0;i--){
-  const j=Math.floor(Math.random()*(i+1));
-  [a[i],a[j]]=[a[j],a[i]];
-}}
+async function mintSnapshot() {
+  try {
+    const canvas = await html2canvas(board, { backgroundColor: null });
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = async () => {
+      const res = await fetch("/.netlify/functions/uploadToPinata", {
+        method: "POST",
+        body: reader.result
+      });
+      const { IpfsHash } = await res.json();
+      const tokenURI = `ipfs://${IpfsHash}`;
+      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+      await (await contract.mintNFT(userAddress, tokenURI)).wait();
+      alert("✅ NFT minted!");
+      hasMinted = true;
+      mintBtn.disabled = true;
+    };
+  } catch (err) {
+    console.error(err);
+    alert("❌ Mint failed");
+  }
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
