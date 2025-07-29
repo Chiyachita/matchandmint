@@ -1,8 +1,14 @@
+# ───────────────────────────────────────────────────────────
+# Tell Netlify where to find our site & our Functions
+# ───────────────────────────────────────────────────────────
 [build]
-  publish    = "."                    # your front‑end files live here
-  functions  = "netlify/functions"    # <-- where your .js lambdas live
+  publish   = "."                  # our site lives in root
+  functions = "netlify/functions"  # lambdas live here
 
+# the redirect below makes
+# /.netlify/functions/*  map to that folder at runtime
 [[redirects]]
-  from = "/.netlify/functions/*"
-  to   = "/.netlify/functions/:splat"
+  from   = "/.netlify/functions/*"
+  to     = "/.netlify/functions/:splat"
   status = 200
+
