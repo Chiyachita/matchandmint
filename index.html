@@ -2,42 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Match & Mint</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Match and Mint</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- ethers.js for on-chain calls -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <!-- html2canvas for board snapshot -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>🧩 Match & Mint</h1>
-    <button id="connect-btn">🔌 Connect Wallet</button>
-    <span id="wallet-address"></span>
-  </header>
+  <h1>🧩 Match and Mint</h1>
 
   <section id="instructions">
-    <h2>How to Play</h2>
+    <h2>📝 How to Play</h2>
     <ol>
-      <li>Connect your wallet (Monad Testnet – chain ID 10143).</li>
-      <li>Click “Start Game.”</li>
-      <li>Rearrange the puzzle before the timer ends.</li>
-      <li>If you finish early, press “Mint Now.”</li>
-      <li>If time runs out, you’ll be prompted to mint your snapshot.</li>
+      <li>Connect your wallet using the "Connect Wallet" button.</li>
+      <li>Ensure you’re on <strong>Monad Testnet</strong> (Chain ID <code>10143</code>).</li>
+      <li>Click "Start Game" to scramble a random puzzle.</li>
+      <li>Rearrange the pieces before the timer (45s) runs out.</li>
+      <li>If you finish early you can hit "Mint NFT" to lock in your design;</li>
+      <li>When time’s up you’ll be prompted to mint your snapshot as an NFT.</li>
     </ol>
   </section>
 
-  <main>
-    <button id="start-btn" disabled>🎮 Start Game</button>
-    <button id="mint-btn" disabled>🖨 Mint Now</button>
-    <p>⏱ Time Left: <span id="timer">45</span>s</p>
-    <div id="puzzle-board"></div>
-    <img id="sample-image" alt="Puzzle Preview" />
-  </main>
+  <!-- Wallet / Game Controls -->
+  <button id="connect-btn">🔌 Connect Wallet</button>
+  <p id="wallet-address"></p>
 
-  <noscript>
-    <p style="color:red;">⚠️ JavaScript is required to play.</p>
-  </noscript>
+  <button id="start-btn" disabled>🎮 Start Game</button>
+  <button id="mint-btn"  disabled>🪙 Mint NFT</button>
 
+  <p>⏱ Time Left: <span id="timer">45</span>s</p>
+
+  <!-- Puzzle Board & Preview -->
+  <div id="puzzle-board"></div>
+  <img id="sample-image" alt="Puzzle Preview" style="max-width:300px; display:block; margin-top:1em;" />
+
+  <!-- Your game logic -->
   <script src="script.js"></script>
 </body>
 </html>
