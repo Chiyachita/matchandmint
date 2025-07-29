@@ -1,0 +1,237 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  padding: 1rem;
+  text-align: center;
+}
+
+h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  background: linear-gradient(45deg, #ffd700, #ffeb3b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+#instructions {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+#instructions h2 {
+  color: #ffd700;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+#instructions ol {
+  text-align: left;
+  margin: 0 auto;
+  display: inline-block;
+}
+
+#instructions li {
+  margin: 0.8rem 0;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.header-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+#wallet-address {
+  background: rgba(255,255,255,0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.controls {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.controls button, #connect-btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+#connect-btn {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  color: white;
+}
+
+#start-btn {
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+  color: white;
+}
+
+#mint-btn {
+  background: linear-gradient(45deg, #FF9800, #F57C00);
+  color: white;
+}
+
+.controls button:hover, #connect-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.controls button:disabled {
+  background: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.controls button:active, #connect-btn:active {
+  transform: translateY(0);
+}
+
+p {
+  font-size: 1.3rem;
+  margin: 1.5rem 0;
+  font-weight: bold;
+}
+
+#timer {
+  color: #ffd700;
+  font-size: 1.5rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#puzzle-board {
+  display: grid;
+  grid-template-columns: repeat(4, 110px);
+  grid-template-rows: repeat(4, 110px);
+  gap: 3px;
+  justify-content: center;
+  margin: 2rem auto;
+  padding: 15px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+.piece {
+  width: 110px;
+  height: 110px;
+  background-size: 440px 440px;
+  cursor: grab;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 2px solid rgba(255,255,255,0.3);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.piece:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+  border-color: #ffd700;
+}
+
+.piece:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+#sample-image {
+  max-width: 300px;
+  margin: 2rem auto;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  border: 3px solid rgba(255,255,255,0.2);
+  transition: transform 0.3s ease;
+}
+
+#sample-image:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  #puzzle-board {
+    grid-template-columns: repeat(4, 80px);
+    grid-template-rows: repeat(4, 80px);
+    gap: 2px;
+  }
+  
+  .piece {
+    width: 80px;
+    height: 80px;
+    background-size: 320px 320px;
+  }
+  
+  .controls {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .controls button, #connect-btn {
+    width: 200px;
+  }
+}
+
+/* Loading animation */
+.loading {
+  animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Success animation */
+@keyframes success {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.success {
+  animation: success 0.6s ease-in-out;
+}

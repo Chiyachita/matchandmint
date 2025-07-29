@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Match & Mint</title>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/nft.storage/dist/bundle.umd.min.js"></script>
+</head>
+<body>
+  <h1>🧩 Match & Mint</h1>
+  <section id="instructions">
+    <h2>How to Play</h2>
+    <ol>
+      <li>Connect Wallet (Monad Testnet 📶).</li>
+      <li>Click “Start Game” and rearrange the 4×4 puzzle.</li>
+      <li>Click “Mint NFT” anytime—or when time’s up—to mint your snapshot.</li>
+    </ol>
+  </section>
+  <div class="header-row">
+    <button id="connect-btn">🔌 Connect Wallet</button>
+    <span id="wallet-address"></span>
+  </div>
+  <div class="controls">
+    <button id="start-btn" disabled>🎮 Start Game</button>
+    <button id="mint-btn" disabled>💎 Mint NFT</button>
+  </div>
+  <p>⏱ Time Left: <span id="timer">45</span>s</p>
+  <div id="puzzle-board"></div>
+  <img id="sample-image" alt="Puzzle Preview" style="max-width:300px;margin-top:1rem;"/>
+  <noscript><p style="color:red;">⚠️ Enable JavaScript to play.</p></noscript>
+  <script src="script.js"></script>
+</body>
+</html>
