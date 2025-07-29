@@ -3,49 +3,54 @@ const fetch = require("node-fetch");
 const FormData = require("form-data");
 
 exports.handler = async function(event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
-  }
-
-  const jwt = process.env.PINATA_JWT;
-  if (!jwt) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Missing PINATA_JWT env var" }),
-    };
-  }
-
   try {
-    // event.body is a base64 data‑URI string: "data:image/png;base64,...."
-    const base64 = event.body.split(",")[1];
-    const buf = Buffer.from(base64, "base64");
+    const jwt = process.env.PINATA_JWT;
+    const base64img = event.body;
+    const imgBuffer = Buffer.from(base64img.split(",")[1], "base64");
 
+    // 1) Pin the PNG
     const form = new FormData();
-    form.append("file", buf, {
+    form.append("file", imgBuffer, {
       filename: `snapshot-${Date.now()}.png`,
       contentType: "image/png",
     });
-
-    const resp = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+    const pinImg = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
       headers: { Authorization: `Bearer ${jwt}` },
       body: form,
-    });
+    }).then(r => r.json());
+    const imgCID = pinImg.IpfsHash;
 
-    if (!resp.ok) {
-      const err = await resp.text();
-      console.error("Pinata error:", err);
-      throw new Error("Pinata upload failed");
-    }
-
-    const { IpfsHash } = await resp.json();
-    return { statusCode: 200, body: JSON.stringify({ IpfsHash }) };
-
-  } catch (err) {
-    console.error(err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+    // 2) Build metadata JSON
+    const metadata = {
+      name: `Match & Mint Snapshot`,
+      description: "A snapshot of my puzzle",
+      image: `ipfs://${imgCID}`,
     };
+
+    // 3) Pin the JSON
+    const pinJSON = await fetch(
+      "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify({
+          pinataContent: metadata,
+          // optional pinataMetadata: { name: "match-mint-metadata" }
+        }),
+      }
+    ).then(r => r.json());
+
+    // Return the metadata CID
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ metadataCID: pinJSON.IpfsHash }),
+    };
+  } catch (err) {
+    console.error("Pinata error:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
