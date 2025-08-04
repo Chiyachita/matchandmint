@@ -2,7 +2,7 @@
 
 // ── CONFIG ──────────────────────────────────────────────────
 const CONTRACT_ADDRESS = '0xCd9926fc1A944262c213Cc1c4c03844D7A842892';
-const ABI = [ /* your FULL ABI here, including mintNFT() */ ];
+const ABI = [ /* your full ABI here */ ];
 
 // Assets repo info
 const GITHUB_OWNER  = 'Chiyachita';
@@ -10,11 +10,12 @@ const ASSETS_REPO   = 'match-and-mint-assets';
 const GITHUB_BRANCH = 'main';
 const IMAGES_PATH   = 'images';
 
-// UI elements + state
+// ── UI ELEMENTS & STATE ─────────────────────────────────────
 const connectBtn   = document.getElementById('connectBtn');
 const walletStatus = document.getElementById('walletStatus');
 const startBtn     = document.getElementById('startBtn');
 const mintBtn      = document.getElementById('mintBtn');
+const restartBtn   = document.getElementById('restartBtn');
 const timeLeftEl   = document.getElementById('timeLeft');
 const puzzleGrid   = document.getElementById('puzzleGrid');
 const previewImg   = document.querySelector('.preview img');
@@ -25,23 +26,9 @@ let timerHandle, timeLeft = 45;
 let dragged = null;
 const ROWS = 4, COLS = 4;
 
-// Web3Modal setup
-const providerOptions = {
-  walletconnect: {
-    package: WalletConnectProvider,
-    options: {
-      rpc: { 10143: 'https://testnet-rpc.monad.xyz' },
-      chainId: 10143
-    }
-  }
-};
+// ── HELPERS ────────────────────────────────────────────────
 
-const web3Modal = new Web3Modal({
-  cacheProvider: false,
-  providerOptions
-});
-
-// Helpers
+// shuffle array in-place
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -49,54 +36,92 @@ function shuffle(arr) {
   }
 }
 
+// load list.json from your GitHub Assets repo
 async function loadImageList() {
   const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/${IMAGES_PATH}/list.json`;
-  console.log('Fetching list.json →', url);
-  const res = await fetch(url);
-  imageList = await res.json();
-  console.log('imageList =', imageList);
-}
-
-function pickRandomImage() {
-  if (!imageList.length) return 'preview.png';
-  const file = imageList[Math.floor(Math.random() * imageList.length)];
-  const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
-  console.log('pickRandomImage →', url);
-  return url;
-}
-
-// Connect Wallet
-async function connectWallet() {
   try {
-    const instance = await web3Modal.connect();
-    provider = new ethers.providers.Web3Provider(instance);
-    const net = await provider.getNetwork();
-    if (net.chainId !== 10143) {
-      await provider.send('wallet_switchEthereumChain', [{ chainId: '0x279F' }]);
-    }
-    signer = provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-    const addr = await signer.getAddress();
-    walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
-    startBtn.disabled = false;
-    instance.on('accountsChanged', ([a]) => walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)}`);
-    instance.on('chainChanged', () => location.reload());
-    instance.on('disconnect', () => location.reload());
-  } catch (err) {
-    console.error('Connection failed', err);
-    alert('Could not connect wallet');
+    const res = await fetch(url);
+    imageList = await res.json();
+  } catch (e) {
+    console.error('Failed to load list.json', e);
+    imageList = [];
   }
 }
 
+// pick a random image URL
+function pickRandomImage() {
+  if (!imageList.length) return 'preview.png';
+  const file = imageList[Math.floor(Math.random() * imageList.length)];
+  return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
+}
+
+// check if the puzzle is fully solved
+function isPuzzleSolved() {
+  const kids = Array.from(puzzleGrid.children);
+  return kids.every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
+}
+
+// ── METAMASK-ONLY CONNECT ───────────────────────────────────
+async function connectWallet() {
+  if (!window.ethereum || !window.ethereum.isMetaMask) {
+    walletStatus.textContent = '🔒 MetaMask not found—please install it!';
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const addr     = accounts[0];
+    walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
+
+    let chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== '0x279F') {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x279F' }]
+        });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x279F',
+              chainName: 'Monad Testnet',
+              nativeCurrency: { name: 'Monad Testnet', symbol: 'MON', decimals: 18 },
+              rpcUrls: ['https://testnet-rpc.monad.xyz'],
+              blockExplorerUrls: ['https://testnet.monadexplorer.com']
+            }]
+          });
+        } else throw switchErr;
+      }
+    }
+
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer   = provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+    walletStatus.textContent += ' ✅';
+    startBtn.disabled = false;
+
+    window.ethereum.on('accountsChanged', ([newAddr]) => {
+      walletStatus.textContent = `Connected: ${newAddr.slice(0,6)}...${newAddr.slice(-4)}`;
+    });
+    window.ethereum.on('chainChanged', () => location.reload());
+
+  } catch (err) {
+    console.error('MetaMask connect error', err);
+    walletStatus.textContent = '⚠️ Connection failed—check console';
+  }
+}
 connectBtn.addEventListener('click', connectWallet);
 
-// Build Puzzle
+// ── BUILD & DRAG-DROP PUZZLE ───────────────────────────────
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
   const cells = [];
   for (let i = 0; i < ROWS * COLS; i++) {
     const cell = document.createElement('div');
-    cell.className = 'cell';
+    cell.className     = 'cell';
+    cell.dataset.index = i;               // tag original position
     const x = (i % COLS) * 100;
     const y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
@@ -107,14 +132,14 @@ function buildPuzzle(imageUrl) {
     cell.draggable = true;
     cell.addEventListener('dragstart', e => dragged = e.target);
     cell.addEventListener('dragover', e => e.preventDefault());
-    cell.addEventListener('drop', swapCells);
+    cell.addEventListener('drop', onDrop);
     cells.push(cell);
   }
   shuffle(cells);
   cells.forEach(c => puzzleGrid.appendChild(c));
 }
 
-function swapCells(e) {
+function onDrop(e) {
   e.preventDefault();
   if (!dragged) return;
   const kids = Array.from(puzzleGrid.children);
@@ -124,53 +149,80 @@ function swapCells(e) {
   }
 }
 
-// Timer
+// ── TIMER ─────────────────────────────────────────────────
 function startTimer() {
   clearInterval(timerHandle);
   timeLeft = 45;
   timeLeftEl.textContent = timeLeft;
   timerHandle = setInterval(() => {
     timeLeftEl.textContent = --timeLeft;
+
     if (timeLeft <= 0) {
       clearInterval(timerHandle);
-      alert('Time’s up! Hit Mint to finalize 🌟');
+
+      // show different message if not solved
+      if (isPuzzleSolved()) {
+        alert('⏰ Time’s up—but you nailed it! Mint your perfect masterpiece 🌟');
+      } else {
+        alert(
+          '⏳ Time’s up! This is your masterpiece—an arrangement uniquely yours. ' +
+          'Feel free to mint it for keeps or hit “Restart” to try again.'
+        );
+      }
+
+      mintBtn.disabled   = false;
+      startBtn.disabled  = false;
+      restartBtn.disabled= false;
     }
   }, 1000);
 }
 
-// Start Game
+// ── RESTART HANDLER ────────────────────────────────────────
+restartBtn.addEventListener('click', () => {
+  clearInterval(timerHandle);
+  puzzleGrid.innerHTML = '';
+  timeLeftEl.textContent = '45';
+  startBtn.disabled    = false;
+  mintBtn.disabled     = true;
+  restartBtn.disabled  = true;
+});
+
+// ── START GAME ───────────────────────────────────────────
 startBtn.addEventListener('click', async () => {
-  startBtn.disabled = true;
-  mintBtn.disabled  = false;
-  if (!imageList.length) await loadImageList();
+  startBtn.disabled    = true;
+  mintBtn.disabled     = true;
+  restartBtn.disabled  = true;
+  await loadImageList();
   buildPuzzle(pickRandomImage());
   startTimer();
 });
 
-// Mint Snapshot
+// ── MINT SNAPSHOT → NETLIFY FN → ON-CHAIN ─────────────────
 async function mintSnapshot() {
-  try:
-    const canvas = await html2canvas(puzzleGrid)
-    const snapshot = canvas.toDataURL("image/png")
-    const resp = await fetch("/.netlify/functions/pinata", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ snapshot })
-    })
-    if (!resp.ok) throw new Error("Pinata function failed")
-    const {metadataCid} = await resp.json()
-    const uri = `ipfs://${metadataCid}`
-    const tx = await contract.mintNFT(await signer.getAddress(), uri)
-    await tx.wait()
-    previewImg.src = snapshot
-    alert("Minted! 🎉 Your NFT is live.")
-    clearInterval(timerHandle)
-    mintBtn.disabled = true
-    startBtn.disabled = false
-  except (err) {
-    console.error(err)
-    alert("Error: " + err.message)
+  try {
+    const canvas   = await html2canvas(puzzleGrid);
+    const snapshot = canvas.toDataURL('image/png');
+    const resp     = await fetch('/.netlify/functions/pinata',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ snapshot })
+    });
+    if (!resp.ok) throw new Error('Pinata function failed');
+    const { metadataCid } = await resp.json();
+
+    const uri = `ipfs://${metadataCid}`;
+    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
+    await tx.wait();
+
+    previewImg.src      = snapshot;
+    alert('Minted! 🎉 Your NFT is live.');
+    clearInterval(timerHandle);
+    mintBtn.disabled    = true;
+    startBtn.disabled   = false;
+    restartBtn.disabled = false;
+  } catch (err) {
+    console.error(err);
+    alert('Error: ' + err.message);
   }
 }
-
-mintBtn.addEventListener("click", mintSnapshot)
+mintBtn.addEventListener('click', mintSnapshot);
