@@ -1,22 +1,21 @@
 // ── CONFIG ──────────────────────────────────────────────────
-const PINATA_JWT       = '<YOUR_PINATA_JWT>';
 const CONTRACT_ADDRESS = '0xCd9926fc1A944262c213Cc1c4c03844D7A842892';
-const ABI = [ /* paste full ABI here */ ];
+const ABI = [ /* your FULL ABI here, including mintNFT() */ ];
 
-// GitHub Assets Repo
-const GITHUB_OWNER     = 'your-github-username';
+// your Assets repo info
+const GITHUB_OWNER     = 'Chiyachita';
 const ASSETS_REPO      = 'match-and-mint-assets';
 const GITHUB_BRANCH    = 'main';
 const IMAGES_PATH      = 'images';
 
 // ── UI ELEMENTS & STATE ─────────────────────────────────────
-const connectBtn  = document.getElementById('connectBtn');
-const walletStatus= document.getElementById('walletStatus');
-const startBtn    = document.getElementById('startBtn');
-const mintBtn     = document.getElementById('mintBtn');
-const timeLeftEl  = document.getElementById('timeLeft');
-const puzzleGrid  = document.getElementById('puzzleGrid');
-const previewImg  = document.querySelector('.preview img');
+const connectBtn   = document.getElementById('connectBtn');
+const walletStatus = document.getElementById('walletStatus');
+const startBtn     = document.getElementById('startBtn');
+const mintBtn      = document.getElementById('mintBtn');
+const timeLeftEl   = document.getElementById('timeLeft');
+const puzzleGrid   = document.getElementById('puzzleGrid');
+const previewImg   = document.querySelector('.preview img');
 
 let provider, signer, contract;
 let imageList = [];
@@ -33,30 +32,31 @@ function shuffle(arr) {
 }
 
 async function loadImageList() {
-  const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/list.json`;
-  try {
-    const res = await fetch(url);
-    imageList = await res.json();
-  } catch (e) {
-    console.error('Failed to load list.json', e);
-  }
+  const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/${IMAGES_PATH}/list.json`;
+  console.log('⏳ Fetching list.json →', url);
+  const res = await fetch(url);
+  imageList = await res.json();
+  console.log('✅ imageList =', imageList);
 }
 
 function pickRandomImage() {
   if (!imageList.length) return 'preview.png';
   const file = imageList[Math.floor(Math.random() * imageList.length)];
-  return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
+  const imageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
+  console.log('🧩 pickRandomImage →', imageUrl);
+  return imageUrl;
 }
 
 // ── WALLET & CONTRACT ─────────────────────────────────────
 async function connectWallet() {
   if (!window.ethereum) {
-    return alert('No Web3 wallet found—install MetaMask!');
+    alert('No Web3 wallet found—install MetaMask!');
+    return;
   }
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x279F' }], // 10143 in hex (corrected)
+      params: [{ chainId: '0x279F' }], // 10143 hex
     });
   } catch (err) {
     if (err.code === 4902) {
@@ -66,40 +66,37 @@ async function connectWallet() {
           params: [{
             chainId: '0x279F',
             chainName: 'Monad Testnet',
-            nativeCurrency: {
-              name: 'Monad Testnet',
-              symbol: 'MON',
-              decimals: 18
-            },
+            nativeCurrency: { name: 'Monad Testnet', symbol: 'MON', decimals: 18 },
             rpcUrls: ['https://testnet-rpc.monad.xyz'],
-            blockExplorerUrls: ['https://testnet.monadexplorer.com']
+            blockExplorerUrls: ['https://testnet.monadexplorer.com'],
           }],
         });
       } catch (addErr) {
         console.error('Add chain error:', addErr);
-        return alert('Cannot add Monad Testnet to wallet.');
+        alert('Cannot add Monad Testnet to wallet.');
+        return;
       }
     } else {
       console.error('Switch chain error:', err);
-      return alert('Failed to switch to Monad Testnet.');
+      alert('Failed to switch to Monad Testnet.');
+      return;
     }
   }
 
-  // Now request accounts
   await window.ethereum.request({ method: 'eth_requestAccounts' });
   provider = new ethers.providers.Web3Provider(window.ethereum);
   signer   = provider.getSigner();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
   const addr = await signer.getAddress();
-  const short = addr.slice(0, 6) + '...' + addr.slice(-4);
-  walletStatus.textContent = `Connected: ${short}`;
+  walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
   startBtn.disabled = false;
 }
 connectBtn.addEventListener('click', connectWallet);
 
-// ── PUZZLE BUILD & DRAGDROP ──────────────────────────────
+// ── PUZZLE BUILD & DRAG‐DROP ──────────────────────────────
 function buildPuzzle(imageUrl) {
+  console.log('🧩 Building puzzle with', imageUrl);
   puzzleGrid.innerHTML = '';
   const cells = [];
   for (let i = 0; i < ROWS * COLS; i++) {
@@ -109,7 +106,7 @@ function buildPuzzle(imageUrl) {
     const y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
       backgroundImage: `url(${imageUrl})`,
-      backgroundSize: `${COLS * 100}px ${ROWS * 100}px`,
+      backgroundSize: `${COLS*100}px ${ROWS*100}px`,
       backgroundPosition: `-${x}px -${y}px`
     });
     cell.draggable = true;
@@ -149,52 +146,39 @@ function startTimer() {
 // ── START GAME ───────────────────────────────────────────
 startBtn.addEventListener('click', async () => {
   startBtn.disabled = true;
-  mintBtn.disabled = false;
-
+  mintBtn.disabled  = false;
   if (!imageList.length) await loadImageList();
-  const imgUrl = pickRandomImage();
-  buildPuzzle(imgUrl);
+  buildPuzzle(pickRandomImage());
   startTimer();
 });
 
-// ── MINT SNAPSHOT → PINATA → ON-CHAIN ─────────────────────
+// ── MINT SNAPSHOT → NETLIFY FN → ON‐CHAIN ─────────────────
 async function mintSnapshot() {
   try {
-    const canvas = await html2canvas(puzzleGrid);
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const canvas   = await html2canvas(puzzleGrid);
+    const snapshot = canvas.toDataURL('image/png');
 
-    const fd = new FormData();
-    fd.append('file', blob, 'snapshot.png');
-    let res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+    // secure pin via our Netlify Function
+    const pinRes = await fetch('/.netlify/functions/pinata', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${PINATA_JWT}` },
-      body: fd
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot })
     });
-    if (!res.ok) throw new Error('Pin file failed');
-    const { IpfsHash: imageCid } = await res.json();
+    if (!pinRes.ok) throw new Error('Pinata function failed');
+    const { metadataCid } = await pinRes.json();
 
-    const meta = {
-      name: `Puzzle Snapshot #${Date.now()}`,
-      description: 'Your custom puzzle arrangement, immortalized on-chain!',
-      image: `ipfs://${imageCid}`
-    };
-    res = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${PINATA_JWT}` },
-      body: JSON.stringify(meta)
-    });
-    if (!res.ok) throw new Error('Pin JSON failed');
-    const { IpfsHash: metadataCid } = await res.json();
-
+    // mint on‐chain
     const uri = `ipfs://${metadataCid}`;
-    const tx = await contract.mintNFT(await signer.getAddress(), uri);
+    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
-    previewImg.src = canvas.toDataURL('image/png');
+    // show preview & reset
+    previewImg.src = snapshot;
     alert('Minted! 🎉 Your NFT is live.');
     clearInterval(timerHandle);
     mintBtn.disabled = true;
     startBtn.disabled = false;
+
   } catch (err) {
     console.error(err);
     alert('Error: ' + err.message);
