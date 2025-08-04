@@ -41,7 +41,7 @@ function shuffle(arr) {
 }
 
 async function loadImageList() {
-  const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/list.json`;
+  const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.status);
@@ -52,10 +52,11 @@ async function loadImageList() {
   }
 }
 
+// Pick via jsDelivr CDN
 function pickRandomImage() {
   if (!imageList.length) return 'preview.png';
   const file = imageList[Math.floor(Math.random() * imageList.length)];
-  return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${ASSETS_REPO}/${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
+  return `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
 }
 
 function isPuzzleSolved() {
@@ -82,7 +83,7 @@ async function connectWallet() {
     walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
 
     let chainId = await eth.request({ method: 'eth_chainId' });
-    if (chainId !== '10143') {
+    if (chainId !== '0x279F') {
       try {
         await eth.request({
           method: 'wallet_switchEthereumChain',
@@ -145,7 +146,7 @@ function buildPuzzle(imageUrl) {
       backgroundPosition: `-${x}px -${y}px`
     });
     cell.draggable = true;
-    cell.addEventListener('dragstart', e => (dragged = e.target));
+    cell.addEventListener('dragstart', e => dragged = e.target);
     cell.addEventListener('dragover', e => e.preventDefault());
     cell.addEventListener('drop', onDrop);
     cells.push(cell);
@@ -158,13 +159,9 @@ function onDrop(e) {
   e.preventDefault();
   if (!dragged) return;
   const kids = Array.from(puzzleGrid.children);
-  const i1 = kids.indexOf(dragged),
-        i2 = kids.indexOf(e.target);
+  const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target);
   if (i1 > -1 && i2 > -1) {
-    puzzleGrid.insertBefore(
-      dragged,
-      i2 > i1 ? e.target.nextSibling : e.target
-    );
+    puzzleGrid.insertBefore(dragged, i2 > i1 ? e.target.nextSibling : e.target);
   }
 }
 
@@ -187,7 +184,7 @@ function startTimer() {
       }
       startBtn.disabled   = false;
       restartBtn.disabled = false;
-      // mintBtn stays enabled until they mint
+      // mintBtn remains enabled
     }
   }, 1000);
 }
@@ -240,4 +237,5 @@ async function mintSnapshot() {
     alert('Error: ' + err.message);
   }
 }
+
 mintBtn.addEventListener('click', mintSnapshot);
