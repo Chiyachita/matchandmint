@@ -19,10 +19,16 @@ exports.handler = async (event) => {
 
     // Pin metadata
     const meta = {
-      name: `Puzzle Snapshot #${Date.now()}`,
-      description: 'Your custom puzzle arrangement!',
-      image: `ipfs://${imageCid}`
-    };
+  name: `Puzzle Snapshot #${Date.now()}`,
+  symbol: 'MMP',
+  description: 'Your custom puzzle arrangement!',
+  image: `ipfs://${imageCid}`,
+  properties: {
+    files: [{ uri: `ipfs://${imageCid}`, type: 'image/png' }],
+    category: 'image'
+  }
+};
+
     const res2 = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
       method: 'POST',
       headers: {
