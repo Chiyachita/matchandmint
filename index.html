@@ -13,11 +13,11 @@
     <div class="how-to-play">
       <h2><span class="emoji">📝</span>How to Play</h2>
       <ol>
-        <li>Click “Connect Wallet” (supports MetaMask, Backpack, Coinbase, WalletConnect, etc.).</li>
+        <li>Click “Connect Wallet”.</li>
         <li>Then click “Start Game.”</li>
         <li>Rearrange pieces before the timer hits 0.</li>
         <li>Hit “Mint NFT” anytime until time’s up.</li>
-        <li>If you don’t finish, your arrangement is your masterpiece—feel free to mint it or hit “Restart.”</li>
+        <li>If you don’t finish, your arrangement is your masterpiece—feel free to mint or Restart.</li>
       </ol>
     </div>
 
@@ -32,15 +32,13 @@
     </div>
 
     <div class="timer">⏲️ Time Left: <span id="timeLeft">45</span>s</div>
-
     <div id="puzzleGrid" class="grid"></div>
-
     <div class="preview">
       <img src="preview.png" alt="Puzzle Preview" />
     </div>
   </div>
 
-  <!-- UMD libraries, must load before app.js -->
+  <!-- UMD libraries (must come before app.js) -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
