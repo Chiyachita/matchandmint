@@ -1,8 +1,8 @@
 // app.js
 
 // ── CHAIN CONFIG ──────────────────────────────────────────
-const CHAIN_ID       = 10143;      // decimal
-const CHAIN_ID_HEX   = '0x279F';   // hex for wallet_switch
+const CHAIN_ID     = 10143;      // decimal
+const CHAIN_ID_HEX = '0x279F';   // hex for wallet_switch
 
 // ── CONTRACT & ASSETS CONFIG ──────────────────────────────
 const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
@@ -90,9 +90,12 @@ async function connectWallet() {
     const instance = await web3Modal.connect();
     const ethersProvider = new ethers.providers.Web3Provider(instance, 'any');
     const network = await ethersProvider.getNetwork();
+
     if (network.chainId !== CHAIN_ID) {
-      await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
+      await ethersProvider.send('wallet_switchEthereumChain',
+        [{ chainId: CHAIN_ID_HEX }]);
     }
+
     provider = ethersProvider;
     signer   = provider.getSigner();
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
@@ -108,6 +111,7 @@ async function connectWallet() {
       if (cid !== CHAIN_ID_HEX) window.location.reload();
     });
     instance.on('disconnect', () => window.location.reload());
+
   } catch (err) {
     console.error('Connection failed', err);
     alert('Could not connect wallet.');
@@ -144,7 +148,8 @@ function onDrop(e) {
   const kids = Array.from(puzzleGrid.children);
   const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target);
   if (i1 > -1 && i2 > -1) {
-    puzzleGrid.insertBefore(dragged, i2 > i1 ? e.target.nextSibling : e.target);
+    puzzleGrid.insertBefore(dragged,
+      i2 > i1 ? e.target.nextSibling : e.target);
   }
 }
 
@@ -204,7 +209,10 @@ async function mintSnapshot() {
     const { metadataCid } = await resp.json();
 
     const uri = `ipfs://${metadataCid}`;
-    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
+    const tx  = await contract.mintNFT(
+      await signer.getAddress(),
+      uri
+    );
     await tx.wait();
 
     previewImg.src      = snapshot;
@@ -213,6 +221,7 @@ async function mintSnapshot() {
     mintBtn.disabled    = true;
     startBtn.disabled   = false;
     restartBtn.disabled = false;
+
   } catch (err) {
     console.error(err);
     alert('Error: ' + err.message);
