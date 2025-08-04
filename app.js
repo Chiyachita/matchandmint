@@ -467,26 +467,30 @@ function isPuzzleSolved() {
   return kids.every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
 }
 
-// ── METAMASK-ONLY CONNECT ───────────────────────────────────
+// ── METAMASK + MONAD TESTNET ONLY CONNECT ─────────────────
 async function connectWallet() {
+  // 1) Must have MetaMask
   if (!window.ethereum || !window.ethereum.isMetaMask) {
-    walletStatus.textContent = '🔒 MetaMask not found—please install it!';
+    walletStatus.textContent = '🔒 Install MetaMask to play!';
     return;
   }
+
   try {
+    // 2) Request accounts
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const addr     = accounts[0];
-    walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
 
-    let chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== '0x279F') {
+    // 3) Force‐switch to Monad Testnet (chainId 10143 / 0x279F)
+    const chain = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chain !== '0x279F') {
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: '0x279F' }]
         });
-      } catch (switchErr) {
-        if (switchErr.code === 4902) {
+      } catch (err) {
+        if (err.code === 4902) {
+          // not added? add it
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [{
@@ -497,28 +501,42 @@ async function connectWallet() {
               blockExplorerUrls: ['https://testnet.monadexplorer.com']
             }]
           });
-        } else throw switchErr;
+        } else {
+          throw err;  // some other error switching
+        }
       }
     }
 
+    // 4) Re-check: if they’re still NOT on 0x279F, bail
+    const finalChain = await window.ethereum.request({ method: 'eth_chainId' });
+    if (finalChain !== '0x279F') {
+      walletStatus.textContent = '⚠️ Please switch to Monad Testnet in MetaMask.';
+      return;
+    }
+
+    // 5) Initialize ethers + contract
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer   = provider.getSigner();
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-    walletStatus.textContent += ' ✅';
+    // 6) UI feedback
+    walletStatus.textContent = `✅ ${addr.slice(0,6)}...${addr.slice(-4)} on Monad`;
     startBtn.disabled = false;
 
-    window.ethereum.on('accountsChanged', ([newAddr]) => {
-      walletStatus.textContent = `Connected: ${newAddr.slice(0,6)}...${newAddr.slice(-4)}`;
+    // 7) Listen for chain changes and force-reload (so they can’t sneak off-chain)
+    window.ethereum.on('chainChanged', chainId => {
+      if (chainId !== '0x279F') location.reload();
     });
-    window.ethereum.on('chainChanged', () => location.reload());
 
   } catch (err) {
-    console.error('MetaMask connect error', err);
-    walletStatus.textContent = '⚠️ Connection failed—check console';
+    console.error('Connect error', err);
+    walletStatus.textContent = '❌ Could not connect MetaMask.';
   }
 }
+
+// Hook it up
 connectBtn.addEventListener('click', connectWallet);
+
 
 // ── BUILD & DRAG-DROP PUZZLE ───────────────────────────────
 function buildPuzzle(imageUrl) {
