@@ -1,12 +1,14 @@
+// app.js
+
 // ── CONFIG ──────────────────────────────────────────────────
 const CONTRACT_ADDRESS = '0xCd9926fc1A944262c213Cc1c4c03844D7A842892';
-const ABI = [ /* your FULL ABI here, including mintNFT() */ ];
+const ABI = [ /* paste your FULL ABI here, including mintNFT() */ ];
 
 // your Assets repo info
-const GITHUB_OWNER     = 'Chiyachita';
-const ASSETS_REPO      = 'match-and-mint-assets';
-const GITHUB_BRANCH    = 'main';
-const IMAGES_PATH      = 'images';
+const GITHUB_OWNER  = 'Chiyachita';
+const ASSETS_REPO   = 'match-and-mint-assets';
+const GITHUB_BRANCH = 'main';
+const IMAGES_PATH   = 'images';
 
 // ── UI ELEMENTS & STATE ─────────────────────────────────────
 const connectBtn   = document.getElementById('connectBtn');
@@ -56,7 +58,7 @@ async function connectWallet() {
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x279F' }], // 10143 hex
+      params: [{ chainId: '0x279F' }], // 10143 in hex
     });
   } catch (err) {
     if (err.code === 4902) {
