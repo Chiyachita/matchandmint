@@ -13,7 +13,7 @@
     <div class="how-to-play">
       <h2><span class="emoji">📝</span>How to Play</h2>
       <ol>
-        <li>Click “Connect Wallet” (Monad Testnet).</li>
+        <li>Click “Connect Wallet” (choose MetaMask, WalletConnect, etc.).</li>
         <li>Then click “Start Game.”</li>
         <li>Rearrange pieces before the timer hits 0.</li>
         <li>Hit “Mint NFT” anytime until time’s up.</li>
@@ -30,17 +30,17 @@
     </div>
 
     <div class="timer">⏲️ Time Left: <span id="timeLeft">45</span>s</div>
-
     <div id="puzzleGrid" class="grid"></div>
-
     <div class="preview">
       <img src="preview.png" alt="Puzzle Preview" />
     </div>
   </div>
 
   <!-- libs -->
-  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <script src="https://unpkg.com/web3modal@1.9.8/dist/index.umd.js"></script>
   <!-- your app -->
   <script src="app.js"></script>
 </body>
