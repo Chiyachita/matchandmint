@@ -56,7 +56,7 @@ async function connectWallet() {
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x27EF' }],
+      params: [{ chainId: '0x27EF' }], // 10143 in hex
     });
   } catch (err) {
     if (err.code === 4902) {
@@ -66,9 +66,13 @@ async function connectWallet() {
           params: [{
             chainId: '0x27EF',
             chainName: 'Monad Testnet',
-            nativeCurrency: { name: 'TADA', symbol: 'TADA', decimals: 18 },
-            rpcUrls: ['https://rpc.testnet.monad.xyz'],
-            blockExplorerUrls: ['https://explorer.testnet.monad.xyz'],
+            nativeCurrency: {
+              name: 'Monad Testnet',
+              symbol: 'MON',
+              decimals: 18
+            },
+            rpcUrls: ['https://testnet-rpc.monad.xyz'],
+            blockExplorerUrls: ['https://testnet.monadexplorer.com']
           }],
         });
       } catch {
@@ -79,6 +83,7 @@ async function connectWallet() {
     }
   }
 
+  // Now request accounts
   await window.ethereum.request({ method: 'eth_requestAccounts' });
   provider = new ethers.providers.Web3Provider(window.ethereum);
   signer   = provider.getSigner();
