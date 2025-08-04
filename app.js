@@ -1,6 +1,10 @@
 // app.js
 
-// ── CONFIG ──────────────────────────────────────────────────
+// ── CHAIN CONFIG ──────────────────────────────────────────
+const CHAIN_ID       = 10143;      // decimal
+const CHAIN_ID_HEX   = '0x279F';   // hex for wallet_switch
+
+// ── CONTRACT & ASSETS CONFIG ──────────────────────────────
 const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
 const ABI = [
   "function name() view returns (string)",
@@ -26,8 +30,7 @@ const timeLeftEl   = document.getElementById('timeLeft');
 const puzzleGrid   = document.getElementById('puzzleGrid');
 const previewImg   = document.querySelector('.preview img');
 
-let provider, signer, contract;
-let web3Modal;
+let provider, signer, contract, web3Modal;
 let imageList = [];
 let timerHandle, timeLeft = 45;
 let dragged = null;
@@ -60,49 +63,49 @@ function pickRandomImage() {
 }
 
 function isPuzzleSolved() {
-  const cells = Array.from(puzzleGrid.children);
-  return cells.every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
+  return Array.from(puzzleGrid.children)
+    .every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
 }
 
-// ── WEB3MODAL SETUP ────────────────────────────────────────
+// ── WEB3MODAL INIT ─────────────────────────────────────────
 async function initWeb3Modal() {
   const providerOptions = {
     walletconnect: {
-      package: window.WalletConnectProvider,
+      package: WalletConnectProvider,
       options: {
-        rpc: { 10143: 'https://testnet-rpc.monad.xyz' },
-        chainId: 10143
+        rpc: { [CHAIN_ID]: 'https://testnet-rpc.monad.xyz' },
+        chainId: CHAIN_ID
       }
     }
   };
-  web3Modal = new window.Web3Modal.default({
+  web3Modal = new Web3Modal({
     cacheProvider: false,
     providerOptions
   });
 }
 
-// ── CONNECT ANY WALLET + FORCE MONAD ───────────────────────
+// ── CONNECT MULTI-WALLET + FORCE MONAD TESTNET ─────────────
 async function connectWallet() {
   try {
     const instance = await web3Modal.connect();
-    // pick correct injected provider if there are multiples
     const ethersProvider = new ethers.providers.Web3Provider(instance, 'any');
     const network = await ethersProvider.getNetwork();
-    if (network.chainId !== 10143) {
-      await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: '0x279F' }]);
+    if (network.chainId !== CHAIN_ID) {
+      await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
     }
-    signer   = ethersProvider.getSigner();
     provider = ethersProvider;
+    signer   = provider.getSigner();
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
     const addr = await signer.getAddress();
     walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
     startBtn.disabled = false;
 
-    // listen for changes
-    instance.on('accountsChanged', ([a]) => walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`);
+    instance.on('accountsChanged', ([a]) => {
+      walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`;
+    });
     instance.on('chainChanged', cid => {
-      if (cid !== '0x279F') window.location.reload();
+      if (cid !== CHAIN_ID_HEX) window.location.reload();
     });
     instance.on('disconnect', () => window.location.reload());
   } catch (err) {
@@ -126,7 +129,7 @@ function buildPuzzle(imageUrl) {
       backgroundPosition: `-${x}px -${y}px`
     });
     cell.draggable = true;
-    cell.addEventListener('dragstart', e => (dragged = e.target));
+    cell.addEventListener('dragstart', e => dragged = e.target);
     cell.addEventListener('dragover', e => e.preventDefault());
     cell.addEventListener('drop', onDrop);
     cells.push(cell);
@@ -164,7 +167,6 @@ function startTimer() {
       }
       startBtn.disabled   = false;
       restartBtn.disabled = false;
-      // mintBtn stays enabled
     }
   }, 1000);
 }
@@ -188,7 +190,7 @@ startBtn.addEventListener('click', async () => {
   startTimer();
 });
 
-// ── MINT SNAPSHOT → NETLIFY FN → ON-CHAIN ─────────────────
+// ── MINT SNAPSHOT → PINATA → ON-CHAIN ─────────────────────
 async function mintSnapshot() {
   try {
     const canvas   = await html2canvas(puzzleGrid);
