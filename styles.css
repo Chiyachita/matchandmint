@@ -16,11 +16,7 @@ body {
   justify-content: center;
   align-items: center;
 }
-.title .emoji {
-  font-size: 1.6rem;
-  margin-right: 8px;
-  color: #9b59b6;
-}
+.title .emoji { font-size: 1.6rem; margin-right: 8px; color: #9b59b6; }
 .how-to-play {
   background: rgba(255,255,255,0.05);
   padding: 16px;
