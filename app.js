@@ -56,7 +56,7 @@ async function connectWallet() {
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x27EF' }], // 10143 in hex
+      params: [{ chainId: '0x279F' }], // 10143 in hex (corrected)
     });
   } catch (err) {
     if (err.code === 4902) {
@@ -64,7 +64,7 @@ async function connectWallet() {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
           params: [{
-            chainId: '0x27EF',
+            chainId: '0x279F',
             chainName: 'Monad Testnet',
             nativeCurrency: {
               name: 'Monad Testnet',
@@ -75,10 +75,12 @@ async function connectWallet() {
             blockExplorerUrls: ['https://testnet.monadexplorer.com']
           }],
         });
-      } catch {
+      } catch (addErr) {
+        console.error('Add chain error:', addErr);
         return alert('Cannot add Monad Testnet to wallet.');
       }
     } else {
+      console.error('Switch chain error:', err);
       return alert('Failed to switch to Monad Testnet.');
     }
   }
