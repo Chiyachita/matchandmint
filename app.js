@@ -27,6 +27,7 @@ const puzzleGrid   = document.getElementById('puzzleGrid');
 const previewImg   = document.querySelector('.preview img');
 
 let provider, signer, contract;
+let web3Modal;
 let imageList = [];
 let timerHandle, timeLeft = 45;
 let dragged = null;
@@ -52,7 +53,6 @@ async function loadImageList() {
   }
 }
 
-// Pick via jsDelivr CDN
 function pickRandomImage() {
   if (!imageList.length) return 'preview.png';
   const file = imageList[Math.floor(Math.random() * imageList.length)];
@@ -64,71 +64,52 @@ function isPuzzleSolved() {
   return cells.every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
 }
 
-// ── METAMASK + MONAD TESTNET ONLY CONNECT ─────────────────
-async function connectWallet() {
-  let eth = window.ethereum;
-  if (!eth) {
-    walletStatus.textContent = '🔒 Install MetaMask to play!';
-    return;
-  }
-  if (Array.isArray(eth.providers)) {
-    eth = eth.providers.find(p => p.isMetaMask) || eth.providers[0];
-  }
-  if (!eth.isMetaMask) {
-    walletStatus.textContent = '🔒 Please use MetaMask to play!';
-    return;
-  }
-  try {
-    const [addr] = await eth.request({ method: 'eth_requestAccounts' });
-    walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
-
-    let chainId = await eth.request({ method: 'eth_chainId' });
-    if (chainId !== '0x279F') {
-      try {
-        await eth.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x279F' }]
-        });
-      } catch (switchErr) {
-        if (switchErr.code === 4902) {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x279F',
-              chainName: 'Monad Testnet',
-              nativeCurrency: { name: 'Monad Testnet', symbol: 'MON', decimals: 18 },
-              rpcUrls: ['https://testnet-rpc.monad.xyz'],
-              blockExplorerUrls: ['https://testnet.monadexplorer.com']
-            }]
-          });
-        } else {
-          throw switchErr;
-        }
+// ── WEB3MODAL SETUP ────────────────────────────────────────
+async function initWeb3Modal() {
+  const providerOptions = {
+    walletconnect: {
+      package: window.WalletConnectProvider,
+      options: {
+        rpc: { 10143: 'https://testnet-rpc.monad.xyz' },
+        chainId: 10143
       }
     }
+  };
+  web3Modal = new window.Web3Modal.default({
+    cacheProvider: false,
+    providerOptions
+  });
+}
 
-    chainId = await eth.request({ method: 'eth_chainId' });
-    if (chainId !== '0x279F') {
-      walletStatus.textContent = '⚠️ Switch to Monad Testnet in MetaMask.';
-      return;
+// ── CONNECT ANY WALLET + FORCE MONAD ───────────────────────
+async function connectWallet() {
+  try {
+    const instance = await web3Modal.connect();
+    // pick correct injected provider if there are multiples
+    const ethersProvider = new ethers.providers.Web3Provider(instance, 'any');
+    const network = await ethersProvider.getNetwork();
+    if (network.chainId !== 10143) {
+      await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: '0x279F' }]);
     }
-
-    provider = new ethers.providers.Web3Provider(eth, 'any');
-    signer   = provider.getSigner();
+    signer   = ethersProvider.getSigner();
+    provider = ethersProvider;
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-    walletStatus.textContent += ' ✅';
+    const addr = await signer.getAddress();
+    walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
     startBtn.disabled = false;
 
-    eth.on('chainChanged', cid => {
-      if (cid !== '0x279F') location.reload();
+    // listen for changes
+    instance.on('accountsChanged', ([a]) => walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`);
+    instance.on('chainChanged', cid => {
+      if (cid !== '0x279F') window.location.reload();
     });
+    instance.on('disconnect', () => window.location.reload());
   } catch (err) {
-    console.error('Connect error', err);
-    walletStatus.textContent = '❌ Connection failed—see console.';
+    console.error('Connection failed', err);
+    alert('Could not connect wallet.');
   }
 }
-connectBtn.addEventListener('click', connectWallet);
 
 // ── BUILD & DRAG-DROP PUZZLE ───────────────────────────────
 function buildPuzzle(imageUrl) {
@@ -138,15 +119,14 @@ function buildPuzzle(imageUrl) {
     const cell = document.createElement('div');
     cell.className     = 'cell';
     cell.dataset.index = i;
-    const x = (i % COLS) * 100;
-    const y = Math.floor(i / COLS) * 100;
+    const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
       backgroundImage: `url(${imageUrl})`,
       backgroundSize: `${COLS*100}px ${ROWS*100}px`,
       backgroundPosition: `-${x}px -${y}px`
     });
     cell.draggable = true;
-    cell.addEventListener('dragstart', e => dragged = e.target);
+    cell.addEventListener('dragstart', e => (dragged = e.target));
     cell.addEventListener('dragover', e => e.preventDefault());
     cell.addEventListener('drop', onDrop);
     cells.push(cell);
@@ -184,7 +164,7 @@ function startTimer() {
       }
       startBtn.disabled   = false;
       restartBtn.disabled = false;
-      // mintBtn remains enabled
+      // mintBtn stays enabled
     }
   }, 1000);
 }
@@ -203,7 +183,7 @@ startBtn.addEventListener('click', async () => {
   startBtn.disabled     = true;
   mintBtn.disabled      = false;
   restartBtn.disabled   = true;
-  await loadImageList();
+  if (!imageList.length) await loadImageList();
   buildPuzzle(pickRandomImage());
   startTimer();
 });
@@ -213,10 +193,9 @@ async function mintSnapshot() {
   try {
     const canvas   = await html2canvas(puzzleGrid);
     const snapshot = canvas.toDataURL('image/png');
-
-    const resp = await fetch('/.netlify/functions/pinata', {
+    const resp     = await fetch('/.netlify/functions/pinata', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ snapshot })
     });
     if (!resp.ok) throw new Error('Pinata function failed');
@@ -237,5 +216,10 @@ async function mintSnapshot() {
     alert('Error: ' + err.message);
   }
 }
-
 mintBtn.addEventListener('click', mintSnapshot);
+
+// ── INIT ───────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  await initWeb3Modal();
+  connectBtn.addEventListener('click', connectWallet);
+});
