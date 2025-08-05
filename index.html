@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Match and Mint Puzzle</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Match & Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="container">
-    <h1>🧩 Match & Mint Puzzle</h1>
+
+    <h1>🧩 Match &amp; Mint Puzzle</h1>
 
     <div class="controls">
       <button id="connectInjectedBtn">🔌 Connect Wallet</button>
@@ -22,21 +23,22 @@
 
     <p>⏲️ Time Left: <span id="timeLeft">45</span>s</p>
 
-    <!-- 4×4 puzzle grid -->
+    <!-- Puzzle Grid -->
     <div id="puzzleGrid" class="grid"></div>
 
-    <!-- reference preview below -->
+    <!-- Reference Box -->
     <div class="preview">
-      <img id="referenceImg" src="preview.png" alt="Reference Puzzle" />
+      <img id="referenceImg" src="preview.png" alt="Reference" />
     </div>
+
   </div>
 
-  <!-- external libs -->
+  <!-- Libs -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- your app logic -->
+  <!-- Your App -->
   <script src="app.js"></script>
 </body>
 </html>
