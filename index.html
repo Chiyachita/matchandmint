@@ -13,7 +13,8 @@
     <div class="how-to-play">
       <h2><span class="emoji">📝</span>How to Play</h2>
       <ol>
-        <li>Click “Connect Wallet”.</li>
+        <li>Choose a wallet: Injected (MetaMask/Backpack/etc.) or WalletConnect.</li>
+        <li>Click “Injected Wallet” or “WalletConnect.”</li>
         <li>Then click “Start Game.”</li>
         <li>Rearrange pieces before the timer hits 0.</li>
         <li>Hit “Mint NFT” anytime until time’s up.</li>
@@ -22,7 +23,8 @@
     </div>
 
     <div class="controls">
-      <button id="connectBtn">🔌 Connect Wallet</button>
+      <button id="connectInjectedBtn">🔌 Injected Wallet</button>
+      <button id="connectWalletConnectBtn">🔗 WalletConnect</button>
       <span id="walletStatus"></span>
     </div>
     <div class="controls">
@@ -38,17 +40,9 @@
     </div>
   </div>
 
-  <!-- UMD libraries (must come before app.js) -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- UMD libraries (must load before app.js) -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-  <script src="https://unpkg.com/web3modal@1.9.8/dist/index.umd.js"></script>
-<!-- add this UMD before app.js -->
-<script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@3.2.0/dist/CoinbaseWalletSDK.umd.min.js"></script>
-<!-- ... -->
-<script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.8/dist/index.umd.js"></script>
-<script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
   <!-- Your application logic -->
   <script src="app.js"></script>
