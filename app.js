@@ -41,9 +41,8 @@ btnConnect.onclick = async () => {
 };
 
 // ── BUILD PUZZLE ───────────────────────────────────────────
-function buildPuzzle() {
+function buildPuzzle(imgUrl) {
   grid.innerHTML = '';
-  const imgUrl = preview.src;  // you set preview.src manually or via random list.json
   for (let i = 0; i < ROWS * COLS; i++) {
     const cell = document.createElement('div');
     cell.className     = 'cell';
@@ -80,7 +79,7 @@ function startTimer() {
     timerEl.textContent = --timeLeft;
     if (timeLeft <= 0) {
       clearInterval(timerHandle);
-      alert('⏳ Time’s up! You can Mint or Restart.');
+      alert('⏳ Time’s up! Mint or Restart.');
       btnStart.disabled   = false;
       btnRestart.disabled = false;
     }
@@ -98,26 +97,26 @@ btnRestart.onclick = () => {
 
 // ── START GAME ────────────────────────────────────────────
 btnStart.onclick = () => {
-  // set preview.src however you like (random or fixed)
+  // set preview image however you like (random or fixed)
   preview.src = preview.src || 'preview.png';
-  buildPuzzle();
+  buildPuzzle(preview.src);
   btnStart.disabled   = true;
   btnMint.disabled    = false;
   btnRestart.disabled = true;
   startTimer();
 };
 
-// ── MINT AS ON-CHAIN DATA-URI ──────────────────────────────
+// ── MINT AS ON-CHAIN DATA-URI ─────────────────────────────
 btnMint.onclick = async () => {
   try {
-    // 1) Render puzzle grid to a base64 PNG
+    // 1) Render puzzle to a base64 PNG
     const canvas   = await html2canvas(grid);
     const snapshot = canvas.toDataURL('image/png');
 
-    // 2) Build a compliant ERC-721 metadata JSON in-app
+    // 2) Build metadata JSON with embedded image
     const metadata = {
       name:        `Puzzle #${Date.now()}`,
-      description: 'A snapshot of my 4×4 puzzle!',
+      description: 'Snapshot of my 4×4 puzzle!',
       image:       snapshot,
       properties: {
         files: [{ uri: snapshot, type: 'image/png' }],
@@ -125,7 +124,7 @@ btnMint.onclick = async () => {
       }
     };
 
-    // 3) Base64-encode that JSON
+    // 3) Base64-encode the JSON
     const b64     = btoa(JSON.stringify(metadata));
     const dataURI = `data:application/json;base64,${b64}`;
 
@@ -136,10 +135,10 @@ btnMint.onclick = async () => {
     );
     await tx.wait();
 
-    alert('🎉 Minted! Check Metadata tab—image shows up immediately.');
-    btnMint.disabled   = true;
-    btnStart.disabled  = false;
-    btnRestart.disabled = false;
+    alert('🎉 Minted! Metadata & image are baked into the tokenURI.');
+    btnMint.disabled     = true;
+    btnStart.disabled    = false;
+    btnRestart.disabled  = false;
   } catch (err) {
     console.error('Mint failed:', err);
     alert('Error minting: ' + err.message);
