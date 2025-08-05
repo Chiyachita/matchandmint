@@ -1,6 +1,8 @@
-// app.js
+// CHAIN CONFIG
+const CHAIN_ID     = 10143;
+const CHAIN_ID_HEX = '0x279F';
 
-// ── CONFIG ──────────────────────────────────────────────────
+// CONTRACT & ASSETS CONFIG
 const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
 const ABI = [
   "function name() view returns (string)",
@@ -16,15 +18,16 @@ const ASSETS_REPO   = 'match-and-mint-assets';
 const GITHUB_BRANCH = 'main';
 const IMAGES_PATH   = 'images';
 
-// ── UI ELEMENTS & STATE ─────────────────────────────────────
-const connectBtn   = document.getElementById('connectBtn');
-const walletStatus = document.getElementById('walletStatus');
-const startBtn     = document.getElementById('startBtn');
-const mintBtn      = document.getElementById('mintBtn');
-const restartBtn   = document.getElementById('restartBtn');
-const timeLeftEl   = document.getElementById('timeLeft');
-const puzzleGrid   = document.getElementById('puzzleGrid');
-const previewImg   = document.querySelector('.preview img');
+// UI ELEMENTS
+const connectInjectedBtn      = document.getElementById('connectInjectedBtn');
+const connectWalletConnectBtn = document.getElementById('connectWalletConnectBtn');
+const walletStatus            = document.getElementById('walletStatus');
+const startBtn                = document.getElementById('startBtn');
+const mintBtn                 = document.getElementById('mintBtn');
+const restartBtn              = document.getElementById('restartBtn');
+const timeLeftEl              = document.getElementById('timeLeft');
+const puzzleGrid              = document.getElementById('puzzleGrid');
+const previewImg              = document.querySelector('.preview img');
 
 let provider, signer, contract;
 let imageList = [];
@@ -32,7 +35,7 @@ let timerHandle, timeLeft = 45;
 let dragged = null;
 const ROWS = 4, COLS = 4;
 
-// ── HELPERS ────────────────────────────────────────────────
+// HELPERS
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -52,7 +55,6 @@ async function loadImageList() {
   }
 }
 
-// Pick via jsDelivr CDN
 function pickRandomImage() {
   if (!imageList.length) return 'preview.png';
   const file = imageList[Math.floor(Math.random() * imageList.length)];
@@ -60,77 +62,72 @@ function pickRandomImage() {
 }
 
 function isPuzzleSolved() {
-  const cells = Array.from(puzzleGrid.children);
-  return cells.every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
+  return Array.from(puzzleGrid.children)
+    .every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
 }
 
-// ── METAMASK + MONAD TESTNET ONLY CONNECT ─────────────────
-async function connectWallet() {
-  let eth = window.ethereum;
-  if (!eth) {
-    walletStatus.textContent = '🔒 Install MetaMask to play!';
-    return;
+// NETWORK SWITCH
+async function switchToMonad(ethersProvider) {
+  const { chainId } = await ethersProvider.getNetwork();
+  if (chainId !== CHAIN_ID) {
+    await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
   }
-  if (Array.isArray(eth.providers)) {
-    eth = eth.providers.find(p => p.isMetaMask) || eth.providers[0];
-  }
-  if (!eth.isMetaMask) {
-    walletStatus.textContent = '🔒 Please use MetaMask to play!';
+}
+
+// CONNECT INJECTED
+async function connectInjected() {
+  if (!window.ethereum) {
+    alert('No injected wallet found! Try WalletConnect.');
     return;
   }
   try {
-    const [addr] = await eth.request({ method: 'eth_requestAccounts' });
-    walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
-
-    let chainId = await eth.request({ method: 'eth_chainId' });
-    if (chainId !== '0x279F') {
-      try {
-        await eth.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x279F' }]
-        });
-      } catch (switchErr) {
-        if (switchErr.code === 4902) {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x279F',
-              chainName: 'Monad Testnet',
-              nativeCurrency: { name: 'Monad Testnet', symbol: 'MON', decimals: 18 },
-              rpcUrls: ['https://testnet-rpc.monad.xyz'],
-              blockExplorerUrls: ['https://testnet.monadexplorer.com']
-            }]
-          });
-        } else {
-          throw switchErr;
-        }
-      }
-    }
-
-    chainId = await eth.request({ method: 'eth_chainId' });
-    if (chainId !== '0x279F') {
-      walletStatus.textContent = '⚠️ Switch to Monad Testnet in MetaMask.';
-      return;
-    }
-
-    provider = new ethers.providers.Web3Provider(eth, 'any');
-    signer   = provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-    walletStatus.textContent += ' ✅';
-    startBtn.disabled = false;
-
-    eth.on('chainChanged', cid => {
-      if (cid !== '0x279F') location.reload();
-    });
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const ethersProvider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+    await switchToMonad(ethersProvider);
+    finishConnect(ethersProvider);
   } catch (err) {
-    console.error('Connect error', err);
-    walletStatus.textContent = '❌ Connection failed—see console.';
+    console.error('Injected connect failed', err);
+    alert('Failed to connect injected wallet.');
   }
 }
-connectBtn.addEventListener('click', connectWallet);
 
-// ── BUILD & DRAG-DROP PUZZLE ───────────────────────────────
+// CONNECT WALLETCONNECT
+async function connectWalletConnect() {
+  try {
+    const wcProvider = new WalletConnectProvider.default({
+      rpc: { [CHAIN_ID]: 'https://testnet-rpc.monad.xyz' },
+      chainId: CHAIN_ID
+    });
+    await wcProvider.enable();
+    const ethersProvider = new ethers.providers.Web3Provider(wcProvider, 'any');
+    await switchToMonad(ethersProvider);
+    finishConnect(ethersProvider);
+  } catch (err) {
+    console.error('WalletConnect failed', err);
+    alert('Failed to connect via WalletConnect.');
+  }
+}
+
+// POST-CONNECT SETUP
+async function finishConnect(ethersProvider) {
+  provider = ethersProvider;
+  signer   = provider.getSigner();
+  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+  const addr = await signer.getAddress();
+  walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
+  startBtn.disabled = false;
+
+  provider.provider.on('accountsChanged', ([a]) => {
+    walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`;
+  });
+  provider.provider.on('chainChanged', cid => {
+    if (cid !== CHAIN_ID_HEX) window.location.reload();
+  });
+  provider.provider.on('disconnect', () => window.location.reload());
+}
+
+// BUILD PUZZLE
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
   const cells = [];
@@ -138,15 +135,14 @@ function buildPuzzle(imageUrl) {
     const cell = document.createElement('div');
     cell.className     = 'cell';
     cell.dataset.index = i;
-    const x = (i % COLS) * 100;
-    const y = Math.floor(i / COLS) * 100;
+    const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
       backgroundImage: `url(${imageUrl})`,
       backgroundSize: `${COLS*100}px ${ROWS*100}px`,
       backgroundPosition: `-${x}px -${y}px`
     });
-    cell.draggable = true;
-    cell.addEventListener('dragstart', e => dragged = e.target);
+    cell.draggable    = true;
+    cell.addEventListener('dragstart', e => (dragged = e.target));
     cell.addEventListener('dragover', e => e.preventDefault());
     cell.addEventListener('drop', onDrop);
     cells.push(cell);
@@ -165,7 +161,7 @@ function onDrop(e) {
   }
 }
 
-// ── TIMER & RESTART ────────────────────────────────────────
+// TIMER & RESTART
 function startTimer() {
   clearInterval(timerHandle);
   timeLeft = 45;
@@ -184,32 +180,39 @@ function startTimer() {
       }
       startBtn.disabled   = false;
       restartBtn.disabled = false;
-      // mintBtn remains enabled
     }
   }, 1000);
 }
 
-restartBtn.addEventListener('click', async () => {
+restartBtn.addEventListener('click', () => {
+  clearInterval(timerHandle);
+  puzzleGrid.innerHTML    = '';
+  timeLeftEl.textContent  = '45';
+  startBtn.disabled       = false;
+  mintBtn.disabled        = true;
+  restartBtn.disabled     = true;
+});
+
+// START GAME
+startBtn.addEventListener('click', async () => {
   startBtn.disabled     = true;
   mintBtn.disabled      = false;
   restartBtn.disabled   = true;
   if (!imageList.length) await loadImageList();
   const imageUrl = pickRandomImage();
   buildPuzzle(imageUrl);
-  previewImg.src = imageUrl;  // show the reference picture
+  previewImg.src = imageUrl;
   startTimer();
 });
-});
 
-// ── MINT SNAPSHOT → NETLIFY FN → ON-CHAIN ─────────────────
+// MINT SNAPSHOT → PINATA → ON-CHAIN
 async function mintSnapshot() {
   try {
     const canvas   = await html2canvas(puzzleGrid);
     const snapshot = canvas.toDataURL('image/png');
-
-    const resp = await fetch('/.netlify/functions/pinata', {
+    const resp     = await fetch('/.netlify/functions/pinata', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ snapshot })
     });
     if (!resp.ok) throw new Error('Pinata function failed');
@@ -232,3 +235,5 @@ async function mintSnapshot() {
 }
 
 mintBtn.addEventListener('click', mintSnapshot);
+connectInjectedBtn.addEventListener('click', connectInjected);
+connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
