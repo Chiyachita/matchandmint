@@ -1,141 +1,58 @@
 // app.js
 
-// ── CHAIN CONFIG ──────────────────────────────────────────
-const CHAIN_ID     = 10143;
-const CHAIN_ID_HEX = '0x279F';
-
 // ── CONTRACT CONFIG ───────────────────────────────────────
 const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
 const ABI = [
-  "function mintNFT(address to, string uri) external returns (uint256)",
-  "function tokenURI(uint256 tokenId) view returns (string)"
+  "function mintNFT(address to, string uri) external returns (uint256)"
 ];
 
-// ── UI ELEMENTS ────────────────────────────────────────────
-const btnConnect = document.getElementById('connectInjectedBtn');
-const btnStart   = document.getElementById('startBtn');
-const btnMint    = document.getElementById('mintBtn');
-const btnRestart = document.getElementById('restartBtn');
-const status     = document.getElementById('walletStatus');
-const timerEl    = document.getElementById('timeLeft');
-const grid       = document.getElementById('puzzleGrid');
-const preview    = document.querySelector('.preview img');
+// ── ELEMENTS ──────────────────────────────────────────────
+const btnMint = document.getElementById('mintBtn');
+const grid    = document.getElementById('puzzleGrid');
+const preview = document.querySelector('.preview img');
 
-let provider, signer, contract;
-let timerHandle, timeLeft = 45;
-let dragged = null;
-const ROWS = 4, COLS = 4;
+// ── PLACEHOLDER PROVIDER/SIGNER SETUP ─────────────────────
+// Replace these with your actual provider/signer initialization:
+let provider  = new ethers.providers.Web3Provider(window.ethereum, 'any');
+let signer    = provider.getSigner();
+let contract  = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-// ── CONNECT WALLET ─────────────────────────────────────────
-btnConnect.onclick = async () => {
-  if (!window.ethereum) {
-    alert('Please install a Web3 wallet!');
-    return;
-  }
-  await window.ethereum.request({ method: 'eth_requestAccounts' });
-  provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-  await provider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
-  signer   = provider.getSigner();
-  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-  const addr = await signer.getAddress();
-  status.textContent = `Connected: ${addr.slice(0,6)}…${addr.slice(-4)}`;
-  btnStart.disabled = false;
-};
-
-// ── BUILD PUZZLE GRID ─────────────────────────────────────
-function buildPuzzle(imgUrl) {
-  grid.innerHTML = '';
-  for (let i = 0; i < ROWS * COLS; i++) {
-    const cell = document.createElement('div');
-    cell.className     = 'cell';
-    cell.dataset.index = i;
-    const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
-    Object.assign(cell.style, {
-      backgroundImage: `url(${imgUrl})`,
-      backgroundSize:  `${COLS*100}px ${ROWS*100}px`,
-      backgroundPosition: `-${x}px -${y}px`
-    });
-    cell.draggable = true;
-    cell.addEventListener('dragstart', e => dragged = e.target);
-    cell.addEventListener('dragover',  e => e.preventDefault());
-    cell.addEventListener('drop',      onDrop);
-    grid.appendChild(cell);
-  }
-}
-
-function onDrop(e) {
-  e.preventDefault();
-  if (!dragged) return;
-  const kids = [...grid.children];
-  const i1   = kids.indexOf(dragged);
-  const i2   = kids.indexOf(e.target);
-  grid.insertBefore(dragged, i2 > i1 ? e.target.nextSibling : e.target);
-}
-
-// ── TIMER & RESTART ────────────────────────────────────────
-function startTimer() {
-  clearInterval(timerHandle);
-  timeLeft = 45;
-  timerEl.textContent = timeLeft;
-  timerHandle = setInterval(() => {
-    timerEl.textContent = --timeLeft;
-    if (timeLeft <= 0) {
-      clearInterval(timerHandle);
-      alert('⏳ Time’s up! You can Mint or Restart.');
-      btnStart.disabled   = false;
-      btnRestart.disabled = false;
-    }
-  }, 1000);
-}
-
-btnRestart.onclick = () => {
-  clearInterval(timerHandle);
-  grid.innerHTML      = '';
-  timerEl.textContent = '45';
-  btnStart.disabled   = false;
-  btnMint.disabled    = true;
-  btnRestart.disabled = true;
-};
-
-// ── START GAME ────────────────────────────────────────────
-btnStart.onclick = () => {
-  // set preview.src however you like (random list or fixed preview.png)
-  preview.src = preview.src || 'preview.png';
-  buildPuzzle(preview.src);
-  btnStart.disabled   = true;
-  btnMint.disabled    = false;
-  btnRestart.disabled = true;
-  startTimer();
-};
-
-// ── MINT VIA nft.storage & ON-CHAIN ───────────────────────
+// ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
 btnMint.onclick = async () => {
   try {
-    // 1) snapshot puzzle to a base64 PNG
-    const canvas   = await html2canvas(grid, { useCORS: true });
-    const snapshot = canvas.toDataURL('image/png');
+    // 1) Render puzzleGrid to a canvas, with CORS support
+    const canvas = await html2canvas(grid, {
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: null
+    });
 
-    // 2) send snapshot to your Netlify function (nftstorage)
+    // 2) Convert to data URL
+    const snapshot = canvas.toDataURL('image/png');
+    console.log('SNAPSHOT DATA URI:', snapshot.slice(0, 100), '…');
+
+    // 3) Update preview so you see exactly what’s being pinned
+    preview.src = snapshot;
+
+    // 4) POST to your Netlify function to pin PNG + metadata JSON
     const res = await fetch('/.netlify/functions/nftstorage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ snapshot })
     });
-    if (!res.ok) throw new Error('Storage function failed');
-    const { metadataCid } = await res.json();
+    if (!res.ok) throw new Error(`Function failed: ${res.status}`);
+    const { metadataCid, pngCid } = await res.json();
+    console.log('PNG CID:', pngCid);
+    console.log('METADATA CID:', metadataCid);
 
-    // 3) mint using ipfs.io gateway for metadata JSON
+    // 5) Form the HTTPS gateway URI and mint on-chain
     const metadataUri = `https://ipfs.io/ipfs/${metadataCid}`;
     const tx = await contract.mintNFT(await signer.getAddress(), metadataUri);
     await tx.wait();
+    alert('🎉 Mint complete!');
 
-    alert('🎉 Minted! Check the Metadata tab in Explorer.');
-    btnMint.disabled    = true;
-    btnStart.disabled   = false;
-    btnRestart.disabled = false;
   } catch (err) {
-    console.error('Mint error:', err);
-    alert('Error minting: ' + err.message);
+    console.error('MintSnapshot error:', err);
+    alert('Error during snapshot mint: ' + err.message);
   }
 };
