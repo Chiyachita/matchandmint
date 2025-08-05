@@ -1,3 +1,5 @@
+// app.js
+
 // ── CONSTANTS ─────────────────────────────────────────────
 const IMAGE_FILES = [
   "puzzle1.svg","puzzle2.svg","puzzle3.svg","puzzle4.svg",
@@ -89,7 +91,6 @@ function buildPuzzle(imgUrl) {
   }
   shuffle(cells);
   cells.forEach(c=>puzzleGrid.appendChild(c));
-  // show reference
   referenceImg.src = imgUrl;
 }
 
@@ -104,7 +105,7 @@ function onDrop(e) {
   );
 }
 
-// ── TIMER & RESTART ───────────────────────────────────────
+// ── TIMER & RESTART ────────────────────────────────────────
 function startTimer() {
   clearInterval(timer);
   timeLeft = 45; timeLeftEl.textContent = timeLeft;
@@ -138,31 +139,33 @@ btnStart.onclick = ()=>{
   startTimer();
 };
 
-// ── MINT → SNAPSHOT → PIN → ON-CHAIN ───────────────────────
+// ── MINT → SNAPSHOT → PIN → ON-CHAIN (with detailed error) ─
 btnMint.onclick = async ()=>{
   try {
-    // 1) snapshot
+    console.log('📸 Capturing snapshot…');
     const canvas = await html2canvas(puzzleGrid,{useCORS:true});
     const snapshot = canvas.toDataURL('image/png');
+    console.log('✅ Snapshot captured');
 
-    // 2) pin via Netlify fn
+    console.log('📡 Pinning snapshot…');
     const res = await fetch('/.netlify/functions/nftstorage',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ snapshot })
+      body:JSON.stringify({snapshot})
     });
-    if (!res.ok) throw new Error(res.statusText);
+    if (!res.ok) throw new Error('Storage fn returned ' + res.status);
     const { metadataCid } = await res.json();
+    console.log('✅ metadataCid:', metadataCid);
 
-    // 3) mint
     const uri = `https://ipfs.io/ipfs/${metadataCid}`;
-    await (await contract.mintNFT(await signer.getAddress(),uri)).wait();
+    console.log('⛓️ Minting with URI:', uri);
+    const tx = await contract.mintNFT(await signer.getAddress(),uri);
+    await tx.wait();
+    alert('🎉 Mint successful!');
 
-    alert('🎉 Mint successful! View on-chain soon.');
-    btnMint.disabled  = true;
-    btnRestart.disabled = false;
-  } catch(e) {
-    console.error(e);
-    alert('Mint failed:\n' + e.message);
+  } catch(err) {
+    console.error('🔥 Mint error:', err);
+    const msg = err.message || 'Unknown error';
+    alert(`❌ Mint failed:\n${msg}`);
   }
 };
