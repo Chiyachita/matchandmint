@@ -1,0 +1,5 @@
+# move into your functions folder
+cd netlify/functions
+
+# install nft.storage (and buffer/shim for Node)
+npm install nft.storage buffer
