@@ -1,51 +1,59 @@
 // netlify/functions/nftstorage.js
-
 const { NFTStorage, File } = require('nft.storage');
 const { Buffer }           = require('buffer');
 
-exports.handler = async (event) => {
+if (!process.env.NFT_STORAGE_KEY) {
+  console.error('Missing NFT_STORAGE_KEY env var');
+}
+
+const client = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
+
+exports.handler = async function (event) {
   try {
-    // 1) grab the base64 snapshot from your front end
     const { snapshot } = JSON.parse(event.body);
-    const base64Data   = snapshot.split(',')[1];
-    const imgBuffer    = Buffer.from(base64Data, 'base64');
+    if (!snapshot.startsWith('data:image/png;base64,')) {
+      throw new Error('Invalid snapshot format');
+    }
 
-    // 2) init nft.storage client
-    const client = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
+    // strip the mime prefix and create a Buffer
+    const b64Data = snapshot.split(',')[1];
+    const imageBuffer = Buffer.from(b64Data, 'base64');
 
-    // 3) pin the PNG
-    const pngFile = new File([imgBuffer], `puzzle-${Date.now()}.png`, {
-      type: 'image/png'
-    });
-    const cidPng = await client.storeBlob(pngFile);
+    // 1) pin the raw PNG
+    console.log('Pinning PNG to IPFS...');
+    const pngCid = await client.storeBlob(
+      new File([imageBuffer], 'snapshot.png', { type: 'image/png' })
+    );
+    console.log('PNG CID:', pngCid);
 
-    // 4) build metadata JSON with HTTPS gateway URLs
-    const gatewayBase = `https://ipfs.io/ipfs/${cidPng}`;
+    // 2) build metadata JSON and pin it
     const metadata = {
-      name:        `Puzzle Snapshot #${Date.now()}`,
-      description: 'Your custom puzzle arrangement!',
-      image:       gatewayBase,
-      properties: {
-        files: [{ uri: gatewayBase, type: 'image/png' }]
+      name:        `Puzzle Snapshot`,
+      description: `Your custom 4×4 puzzle arrangement.`,
+      image:       `ipfs://${pngCid}`,
+      properties:  {
+        files: [
+          { uri: `ipfs://${pngCid}`, type: 'image/png' }
+        ]
       }
     };
-
-    // 5) pin the JSON itself
-    const metaFile = new File(
-      [JSON.stringify(metadata)],
-      `meta-${Date.now()}.json`,
-      { type: 'application/json' }
+    console.log('Pinning metadata JSON...');
+    const metadataCid = await client.storeBlob(
+      new File(
+        [Buffer.from(JSON.stringify(metadata))],
+        'metadata.json',
+        { type: 'application/json' }
+      )
     );
-    const cidMeta = await client.storeBlob(metaFile);
+    console.log('Metadata CID:', metadataCid);
 
-    // 6) return the metadata CID
     return {
       statusCode: 200,
-      body: JSON.stringify({ metadataCid: cidMeta })
+      body: JSON.stringify({ pngCid, metadataCid })
     };
 
   } catch (err) {
-    console.error('nft.storage error:', err);
+    console.error('Storage function error:', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message })
