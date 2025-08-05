@@ -4,7 +4,7 @@
 const CHAIN_ID     = 10143;
 const CHAIN_ID_HEX = '0x279F';
 
-// ── CONTRACT & ASSETS CONFIG ──────────────────────────────
+// ── CONTRACT CONFIG ───────────────────────────────────────
 const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
 const ABI = [
   "function mintNFT(address to, string uri) external returns (uint256)",
@@ -200,30 +200,35 @@ startBtn.addEventListener('click', async () => {
   startTimer();
 });
 
-// ── MINT SNAPSHOT → PINATA → ON-CHAIN ─────────────────────
+// ── MINT SNAPSHOT → ON-CHAIN DATA URI ─────────────────────
 async function mintSnapshot() {
   try {
-    // 1) snapshot
+    // 1) snapshot puzzle as base64 PNG
     const canvas   = await html2canvas(puzzleGrid);
     const snapshot = canvas.toDataURL('image/png');
 
-    // 2) pin to Pinata via Netlify fn
-    const resp = await fetch('/.netlify/functions/pinata', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ snapshot })
-    });
-    if (!resp.ok) throw new Error('Pinata function failed');
-    const { metadataCid } = await resp.json();
+    // 2) build metadata JSON in-app
+    const metadata = {
+      name:        `Puzzle Snapshot #${Date.now()}`,
+      description: 'Your custom puzzle arrangement!',
+      image:       snapshot,
+      properties: {
+        files: [{ uri: snapshot, type: 'image/png' }],
+        category: 'image'
+      }
+    };
 
-    // 3) use HTTP gateway URL so explorer can fetch it
-    const uri = `https://gateway.pinata.cloud/ipfs/${metadataCid}`;
-    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
+    // 3) base64-encode JSON
+    const b64     = btoa(JSON.stringify(metadata));
+    const dataUri = `data:application/json;base64,${b64}`;
+
+    // 4) mint with on-chain data URI
+    const tx = await contract.mintNFT(await signer.getAddress(), dataUri);
     await tx.wait();
 
-    // 4) show preview
+    // 5) show the snapshot
     previewImg.src      = snapshot;
-    alert('🎉 Minted! Your NFT is live.');
+    alert('🎉 Minted! Data-URI NFT is live.');
     clearInterval(timerHandle);
     mintBtn.disabled    = true;
     startBtn.disabled   = false;
