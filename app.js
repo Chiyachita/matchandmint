@@ -1,8 +1,8 @@
 // app.js
 
 // ── CHAIN CONFIG ──────────────────────────────────────────
-const CHAIN_ID     = 10143;      // decimal
-const CHAIN_ID_HEX = '0x279F';   // hex for wallet_switch
+const CHAIN_ID     = 10143;      // decimal form
+const CHAIN_ID_HEX = '0x279F';   // hex form
 
 // ── CONTRACT & ASSETS CONFIG ──────────────────────────────
 const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
@@ -21,16 +21,17 @@ const GITHUB_BRANCH = 'main';
 const IMAGES_PATH   = 'images';
 
 // ── UI ELEMENTS & STATE ─────────────────────────────────────
-const connectBtn   = document.getElementById('connectBtn');
-const walletStatus = document.getElementById('walletStatus');
-const startBtn     = document.getElementById('startBtn');
-const mintBtn      = document.getElementById('mintBtn');
-const restartBtn   = document.getElementById('restartBtn');
-const timeLeftEl   = document.getElementById('timeLeft');
-const puzzleGrid   = document.getElementById('puzzleGrid');
-const previewImg   = document.querySelector('.preview img');
+const connectInjectedBtn      = document.getElementById('connectInjectedBtn');
+const connectWalletConnectBtn = document.getElementById('connectWalletConnectBtn');
+const walletStatus            = document.getElementById('walletStatus');
+const startBtn                = document.getElementById('startBtn');
+const mintBtn                 = document.getElementById('mintBtn');
+const restartBtn              = document.getElementById('restartBtn');
+const timeLeftEl              = document.getElementById('timeLeft');
+const puzzleGrid              = document.getElementById('puzzleGrid');
+const previewImg              = document.querySelector('.preview img');
 
-let provider, signer, contract, web3Modal;
+let provider, signer, contract;
 let imageList = [];
 let timerHandle, timeLeft = 45;
 let dragged = null;
@@ -67,55 +68,66 @@ function isPuzzleSolved() {
     .every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
 }
 
-// ── WEB3MODAL INIT ─────────────────────────────────────────
-async function initWeb3Modal() {
-  const providerOptions = {
-    walletconnect: {
-      package: WalletConnectProvider,
-      options: {
-        rpc: { [CHAIN_ID]: 'https://testnet-rpc.monad.xyz' },
-        chainId: CHAIN_ID
-      }
-    }
-  };
-  web3Modal = new Web3Modal({
-    cacheProvider: false,
-    providerOptions
-  });
+// ── NETWORK SWITCH ─────────────────────────────────────────
+async function switchToMonad(ethersProvider) {
+  const { chainId } = await ethersProvider.getNetwork();
+  if (chainId !== CHAIN_ID) {
+    await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
+  }
 }
 
-// ── CONNECT MULTI-WALLET + FORCE MONAD TESTNET ─────────────
-async function connectWallet() {
-  try {
-    const instance = await web3Modal.connect();
-    const ethersProvider = new ethers.providers.Web3Provider(instance, 'any');
-    const network = await ethersProvider.getNetwork();
-
-    if (network.chainId !== CHAIN_ID) {
-      await ethersProvider.send('wallet_switchEthereumChain',
-        [{ chainId: CHAIN_ID_HEX }]);
-    }
-
-    provider = ethersProvider;
-    signer   = provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-    const addr = await signer.getAddress();
-    walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
-    startBtn.disabled = false;
-
-    instance.on('accountsChanged', ([a]) => {
-      walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`;
-    });
-    instance.on('chainChanged', cid => {
-      if (cid !== CHAIN_ID_HEX) window.location.reload();
-    });
-    instance.on('disconnect', () => window.location.reload());
-
-  } catch (err) {
-    console.error('Connection failed', err);
-    alert('Could not connect wallet.');
+// ── CONNECT INJECTED WALLET ────────────────────────────────
+async function connectInjected() {
+  if (!window.ethereum) {
+    alert('No injected wallet found! Try WalletConnect.');
+    return;
   }
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const ethersProvider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+    await switchToMonad(ethersProvider);
+    finishConnect(ethersProvider);
+  } catch (err) {
+    console.error('Injected connect failed', err);
+    alert('Failed to connect injected wallet.');
+  }
+}
+
+// ── CONNECT WALLETCONNECT ──────────────────────────────────
+async function connectWalletConnect() {
+  try {
+    const wcProvider = new WalletConnectProvider.default({
+      rpc: { [CHAIN_ID]: 'https://testnet-rpc.monad.xyz' },
+      chainId: CHAIN_ID
+    });
+    await wcProvider.enable();
+    const ethersProvider = new ethers.providers.Web3Provider(wcProvider, 'any');
+    await switchToMonad(ethersProvider);
+    finishConnect(ethersProvider);
+  } catch (err) {
+    console.error('WalletConnect failed', err);
+    alert('Failed to connect via WalletConnect.');
+  }
+}
+
+// ── COMMON POST-CONNECT SETUP ─────────────────────────────
+async function finishConnect(ethersProvider) {
+  provider = ethersProvider;
+  signer   = provider.getSigner();
+  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+  const addr = await signer.getAddress();
+  walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
+  startBtn.disabled = false;
+
+  // listen for account or chain changes
+  provider.provider.on('accountsChanged', ([a]) => {
+    walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`;
+  });
+  provider.provider.on('chainChanged', cid => {
+    if (cid !== CHAIN_ID_HEX) window.location.reload();
+  });
+  provider.provider.on('disconnect', () => window.location.reload());
 }
 
 // ── BUILD & DRAG-DROP PUZZLE ───────────────────────────────
@@ -132,8 +144,8 @@ function buildPuzzle(imageUrl) {
       backgroundSize: `${COLS*100}px ${ROWS*100}px`,
       backgroundPosition: `-${x}px -${y}px`
     });
-    cell.draggable = true;
-    cell.addEventListener('dragstart', e => dragged = e.target);
+    cell.draggable    = true;
+    cell.addEventListener('dragstart', e => (dragged = e.target));
     cell.addEventListener('dragover', e => e.preventDefault());
     cell.addEventListener('drop', onDrop);
     cells.push(cell);
@@ -148,8 +160,7 @@ function onDrop(e) {
   const kids = Array.from(puzzleGrid.children);
   const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target);
   if (i1 > -1 && i2 > -1) {
-    puzzleGrid.insertBefore(dragged,
-      i2 > i1 ? e.target.nextSibling : e.target);
+    puzzleGrid.insertBefore(dragged, i2 > i1 ? e.target.nextSibling : e.target);
   }
 }
 
@@ -178,11 +189,11 @@ function startTimer() {
 
 restartBtn.addEventListener('click', () => {
   clearInterval(timerHandle);
-  puzzleGrid.innerHTML  = '';
-  timeLeftEl.textContent = '45';
-  startBtn.disabled     = false;
-  mintBtn.disabled      = true;
-  restartBtn.disabled   = true;
+  puzzleGrid.innerHTML    = '';
+  timeLeftEl.textContent  = '45';
+  startBtn.disabled       = false;
+  mintBtn.disabled        = true;
+  restartBtn.disabled     = true;
 });
 
 // ── START GAME ───────────────────────────────────────────
@@ -209,10 +220,7 @@ async function mintSnapshot() {
     const { metadataCid } = await resp.json();
 
     const uri = `ipfs://${metadataCid}`;
-    const tx  = await contract.mintNFT(
-      await signer.getAddress(),
-      uri
-    );
+    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
     previewImg.src      = snapshot;
@@ -221,41 +229,14 @@ async function mintSnapshot() {
     mintBtn.disabled    = true;
     startBtn.disabled   = false;
     restartBtn.disabled = false;
-
   } catch (err) {
     console.error(err);
     alert('Error: ' + err.message);
   }
 }
-mintBtn.addEventListener('click', mintSnapshot);
-// inside initWeb3Modal() in app.js
-const providerOptions = {
-  // WalletConnect (as before)
-  walletconnect: {
-    package: WalletConnectProvider,
-    options: {
-      rpc: { [CHAIN_ID]: 'https://testnet-rpc.monad.xyz' },
-      chainId: CHAIN_ID
-    }
-  },
-  // Coinbase Wallet
-  coinbasewallet: {
-    package: CoinbaseWalletSDK,
-    options: {
-      appName: 'MatchAndMintPuzzle',
-      jsonRpcUrl: 'https://testnet-rpc.monad.xyz',
-      chainId: CHAIN_ID,
-      darkMode: false
-    }
-  }
-};
-web3Modal = new Web3Modal({
-  cacheProvider: false,
-  providerOptions
-});
 
-// ── INIT ───────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  await initWeb3Modal();
-  connectBtn.addEventListener('click', connectWallet);
-});
+mintBtn.addEventListener('click', mintSnapshot);
+
+// ── WIRE UP CONNECT BUTTONS ───────────────────────────────
+connectInjectedBtn.addEventListener('click', connectInjected);
+connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
