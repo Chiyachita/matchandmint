@@ -1,7 +1,11 @@
 // app.js
 
 // ── CONFIG ────────────────────────────────────────────────
-// GitHub assets
+// Hard-coded list of your SVG filenames (from match-and-mint-assets/images)
+const imageFiles = [
+  "puzzle1.svg","puzzle2.svg","puzzle3.svg","puzzle4.svg",
+  "puzzle5.svg","puzzle6.svg","puzzle7.svg","puzzle8.svg"
+];
 const GITHUB_OWNER  = 'Chiyachita';
 const ASSETS_REPO   = 'match-and-mint-assets';
 const GITHUB_BRANCH = 'main';
@@ -25,47 +29,20 @@ const timeLeftEl   = document.getElementById('timeLeft');
 const puzzleGrid   = document.getElementById('puzzleGrid');
 const referenceImg = document.getElementById('referenceImg');
 
-let imageList = [];
 let provider, signer, contract;
 let timerHandle, timeLeft = 45;
 let dragged = null;
 const ROWS = 4, COLS = 4;
 
-// ── HELPERS ───────────────────────────────────────────────
-function logStep(msg, data) {
-  console.log('%c' + msg, 'color:#0af;font-weight:bold', data||'');
-}
-function showError(err) {
-  console.error(err);
-  const text = err?.message || JSON.stringify(err);
-  alert('❌ ERROR: ' + text);
+// ── HELPER TO BUILD A RAW URL ─────────────────────────────
+function resolveImageUrl(filename) {
+  return `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${filename}`;
 }
 
-// ── LOAD IMAGE LIST ───────────────────────────────────────
-async function loadImageList() {
-  const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/list.json`;
-  logStep('Loading list.json from', url);
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('list.json fetch failed: ' + res.status);
-    imageList = await res.json();
-    logStep('Loaded imageList:', imageList);
-  } catch (e) {
-    showError(e);
-    imageList = [];
-  }
-}
-
-// ── PICK RANDOM IMAGE URL ─────────────────────────────────
+// ── PICK AND RETURN A RANDOM IMAGE URL ────────────────────
 function pickRandomImage() {
-  if (!imageList.length) {
-    logStep('No images in list, falling back to preview.png');
-    return 'preview.png';
-  }
-  const file = imageList[Math.floor(Math.random() * imageList.length)];
-  const full = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
-  logStep('Picked random image:', full);
-  return full;
+  const file = imageFiles[Math.floor(Math.random() * imageFiles.length)];
+  return resolveImageUrl(file);
 }
 
 // ── CONNECT WALLET ─────────────────────────────────────────
@@ -73,129 +50,118 @@ connectBtn.onclick = async () => {
   try {
     if (!window.ethereum) throw new Error('No injected wallet found');
     await window.ethereum.request({ method: 'eth_requestAccounts' });
-    provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-    logStep('Ethereum provider initialized', provider);
-    await provider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
+    provider = new ethers.providers.Web3Provider(window.ethereum,'any');
+    await provider.send('wallet_switchEthereumChain',[{ chainId:CHAIN_ID_HEX }]);
     signer   = provider.getSigner();
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
     const addr = await signer.getAddress();
     walletStatus.textContent = `Connected: ${addr.slice(0,6)}…${addr.slice(-4)}`;
     startBtn.disabled = false;
-    logStep('Wallet connected:', addr);
-  } catch (err) {
-    showError(err);
+  } catch (e) {
+    console.error(e);
+    alert('🔌 Wallet connect failed: '+e.message);
   }
 };
 
-// ── SHUFFLE ───────────────────────────────────────────────
+// ── SHUFFLE UTILITY ───────────────────────────────────────
 function shuffle(arr) {
   for (let i = arr.length-1; i>0; i--) {
     const j = Math.floor(Math.random()*(i+1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    [arr[i],arr[j]] = [arr[j],arr[i]];
   }
 }
 
-// ── BUILD GRID + REFERENCE ─────────────────────────────────
-function buildPuzzle(imageUrl) {
-  logStep('Building puzzle grid with', imageUrl);
+// ── BUILD 4×4 PUZZLE GRID & SHOW REFERENCE ─────────────────
+function buildPuzzle(imgUrl) {
   puzzleGrid.innerHTML = '';
   const cells = [];
-  for (let i = 0; i<ROWS*COLS; i++) {
+  for (let i = 0; i < ROWS*COLS; i++) {
     const cell = document.createElement('div');
     cell.className     = 'cell';
     cell.dataset.index = i;
-    const x = (i%COLS)*100, y = Math.floor(i/COLS)*100;
+    const x = (i % COLS)*100, y = Math.floor(i / COLS)*100;
     Object.assign(cell.style, {
-      backgroundImage: `url(${imageUrl})`,
+      backgroundImage: `url(${imgUrl})`,
       backgroundSize:  `${COLS*100}px ${ROWS*100}px`,
       backgroundPosition: `-${x}px -${y}px`
     });
-    cell.draggable=true;
+    cell.draggable = true;
     cell.addEventListener('dragstart', e=>dragged=e.target);
-    cell.addEventListener('dragover', e=>e.preventDefault());
-    cell.addEventListener('drop', onDrop);
+    cell.addEventListener('dragover',  e=>e.preventDefault());
+    cell.addEventListener('drop',      onDrop);
     cells.push(cell);
   }
   shuffle(cells);
   cells.forEach(c=>puzzleGrid.appendChild(c));
-  // show reference below
-  referenceImg.src = imageUrl;
+
+  // Show the full image below as reference
+  referenceImg.src = imgUrl;
 }
 
-// ── DROP HANDLER ──────────────────────────────────────────
 function onDrop(e) {
   e.preventDefault();
   if (!dragged) return;
-  const kids = [...puzzleGrid.children];
+  const kids = Array.from(puzzleGrid.children);
   const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target);
-  puzzleGrid.insertBefore(dragged, i2>i1?e.target.nextSibling:e.target);
+  puzzleGrid.insertBefore(dragged, i2 > i1 ? e.target.nextSibling : e.target);
 }
 
 // ── TIMER & RESTART ────────────────────────────────────────
 function startTimer() {
   clearInterval(timerHandle);
   timeLeft = 45; timeLeftEl.textContent = timeLeft;
-  timerHandle = setInterval(() => {
+  timerHandle = setInterval(()=>{
     timeLeftEl.textContent = --timeLeft;
-    if (timeLeft<=0) {
+    if (timeLeft <= 0) {
       clearInterval(timerHandle);
       alert('⏳ Time’s up! You can Mint or Restart.');
-      startBtn.disabled = false;
+      startBtn.disabled   = false;
       restartBtn.disabled = false;
     }
   },1000);
 }
 
-restartBtn.onclick=()=>{
+restartBtn.onclick = () => {
   clearInterval(timerHandle);
-  puzzleGrid.innerHTML='';
-  timeLeftEl.textContent='45';
-  startBtn.disabled=false;
-  mintBtn.disabled=true;
-  restartBtn.disabled=true;
+  puzzleGrid.innerHTML = '';
+  timeLeftEl.textContent = '45';
+  startBtn.disabled   = false;
+  mintBtn.disabled    = true;
+  restartBtn.disabled = true;
 };
 
 // ── START GAME ────────────────────────────────────────────
-startBtn.onclick=async()=>{
-  try{
-    startBtn.disabled=true;
-    mintBtn.disabled=false;
-    restartBtn.disabled=true;
-    if (!imageList.length) await loadImageList();
-    const img = pickRandomImage();
-    buildPuzzle(img);
-    startTimer();
-  }catch(e){ showError(e); }
+startBtn.onclick = () => {
+  startBtn.disabled   = true;
+  mintBtn.disabled    = false;
+  restartBtn.disabled = true;
+  const img = pickRandomImage();
+  buildPuzzle(img);
+  startTimer();
 };
 
-// ── MINT SNAPSHOT → NFT.STORAGE → ONCHAIN ─────────────────
-mintBtn.onclick=async()=>{
-  try{
-    // snapshot
-    logStep('Capturing snapshot...');
-    const canvas = await html2canvas(puzzleGrid,{useCORS:true});
+// ── MINT: SNAPSHOT → Pinata/nft.storage Fn → ON-CHAIN ─────
+mintBtn.onclick = async() => {
+  try {
+    // 1) snapshot
+    const canvas   = await html2canvas(puzzleGrid,{useCORS:true});
     const snapshot = canvas.toDataURL('image/png');
-    logStep('Snapshot URI (trimmed):', snapshot.slice(0,80)+'…');
 
-    // pin via Netlify fn
-    logStep('Sending to nftstorage function');
-    const res = await fetch('/.netlify/functions/nftstorage',{
+    // 2) pin via Netlify fn
+    const res = await fetch('/.netlify/functions/nftstorage', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({snapshot})
     });
-    if (!res.ok) throw new Error('Function returned '+res.status);
-    const {metadataCid} = await res.json();
-    logStep('Received metadataCid:', metadataCid);
+    if (!res.ok) throw new Error(res.statusText);
+    const { metadataCid } = await res.json();
 
-    // mint
+    // 3) mint
     const uri = `https://ipfs.io/ipfs/${metadataCid}`;
-    logStep('Minting on-chain with URI:', uri);
-    const tx=await contract.mintNFT(await signer.getAddress(),uri);
-    await tx.wait();
-    alert('🎉 Minted!');
-
-  }catch(e){
-    showError(e);
+    await (await contract.mintNFT(await signer.getAddress(), uri)).wait();
+    alert('🎉 Minted! Check the explorer.');
+  } catch (e) {
+    console.error(e);
+    alert('Oops: '+e.message);
   }
 };
