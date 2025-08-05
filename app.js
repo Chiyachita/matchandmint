@@ -140,32 +140,55 @@ btnStart.onclick = ()=>{
 };
 
 // ── MINT → SNAPSHOT → PIN → ON-CHAIN (with detailed error) ─
-btnMint.onclick = async ()=>{
+btnMint.onclick = async () => {
   try {
+    // 1) Capture the snapshot PNG
     console.log('📸 Capturing snapshot…');
-    const canvas = await html2canvas(puzzleGrid,{useCORS:true});
-    const snapshot = canvas.toDataURL('image/png');
-    console.log('✅ Snapshot captured');
+    const canvas = await html2canvas(puzzleGrid, { useCORS: true });
+    const dataUrl = canvas.toDataURL('image/png');
+    // convert dataURL → Blob
+    const resData = await fetch(dataUrl);
+    const pngBlob = await resData.blob();
 
-    console.log('📡 Pinning snapshot…');
-    const res = await fetch('/.netlify/functions/nftstorage',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({snapshot})
+    // 2) Build a FormData and POST to NFT.Storage REST endpoint
+    console.log('📡 Pinning snapshot via NFT.Storage REST API…');
+    const form = new FormData();
+    form.append('file', pngBlob, 'snapshot.png');
+
+    const pinRes = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${window.NFT_STORAGE_KEY}`
+      },
+      body: form
     });
-    if (!res.ok) throw new Error('Storage fn returned ' + res.status);
-    const { metadataCid } = await res.json();
-    console.log('✅ metadataCid:', metadataCid);
+    if (!pinRes.ok) throw new Error(`NFT.Storage returned ${pinRes.status}`);
+    const pinJSON = await pinRes.json();
+    const pngCid = pinJSON.value.cid;
+    console.log('✅ PNG CID:', pngCid);
 
-    const uri = `https://ipfs.io/ipfs/${metadataCid}`;
-    console.log('⛓️ Minting with URI:', uri);
-    const tx = await contract.mintNFT(await signer.getAddress(),uri);
+    // 3) Mint on-chain using that CID
+    const metadata = {
+      name:        'Puzzle Snapshot',
+      description: 'Your custom 4×4 puzzle arrangement.',
+      image:       `ipfs://${pngCid}`,
+      properties: {
+        files: [{ uri: `ipfs://${pngCid}`, type: 'image/png' }]
+      }
+    };
+    // (Optionally you could pin metadata too, but many explorers read raw NFT metadata from your URI)
+    // For now we’ll embed metadata JSON directly on-chain via a data URI:
+    const metadataUri = `data:application/json,${encodeURIComponent(JSON.stringify(metadata))}`;
+
+    console.log('⛓️ Minting with URI:', metadataUri);
+    const tx = await contract.mintNFT(await signer.getAddress(), metadataUri);
     await tx.wait();
-    alert('🎉 Mint successful!');
 
-  } catch(err) {
+    alert('🎉 Mint successful—check your wallet!');
+
+  } catch (err) {
     console.error('🔥 Mint error:', err);
-    const msg = err.message || 'Unknown error';
-    alert(`❌ Mint failed:\n${msg}`);
+    alert('Mint failed:\n' + err.message);
   }
 };
+
