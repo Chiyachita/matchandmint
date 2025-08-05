@@ -1,3 +1,5 @@
+// app.js
+
 // ── CONFIG ────────────────────────────────────────────────
 // GitHub assets
 const GITHUB_OWNER  = 'Chiyachita';
@@ -29,9 +31,9 @@ let timerHandle, timeLeft = 45;
 let dragged = null;
 const ROWS = 4, COLS = 4;
 
-// ── LOAD IMAGE LIST ───────────────────────────────────────
+// ── LOAD IMAGE LIST (FIXED PATH!) ─────────────────────────
 async function loadImageList() {
-  const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
+  const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/list.json`;
   try {
     const res = await fetch(url);
     imageList = await res.json();
@@ -63,21 +65,21 @@ connectBtn.onclick = async () => {
 
 // ── SHUFFLE HELPER ─────────────────────────────────────────
 function shuffle(arr) {
-  for (let i = arr.length-1; i>0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 }
 
-// ── BUILD THE 4×4 GRID ────────────────────────────────────
+// ── BUILD 4×4 GRID + SHOW REFERENCE ───────────────────────
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
   const cells = [];
-  for (let i = 0; i < ROWS*COLS; i++) {
+  for (let i = 0; i < ROWS * COLS; i++) {
     const cell = document.createElement('div');
     cell.className     = 'cell';
     cell.dataset.index = i;
-    const x = (i % COLS)*100, y = Math.floor(i / COLS)*100;
+    const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
       backgroundImage: `url(${imageUrl})`,
       backgroundSize:  `${COLS*100}px ${ROWS*100}px`,
@@ -92,11 +94,10 @@ function buildPuzzle(imageUrl) {
   shuffle(cells);
   cells.forEach(c => puzzleGrid.appendChild(c));
 
-  // show reference image uncut
+  // reference box below
   referenceImg.src = imageUrl;
 }
 
-// ── DROP HANDLER ──────────────────────────────────────────
 function onDrop(e) {
   e.preventDefault();
   if (!dragged) return;
@@ -105,7 +106,7 @@ function onDrop(e) {
   puzzleGrid.insertBefore(dragged, i2 > i1 ? e.target.nextSibling : e.target);
 }
 
-// ── TIMER LOGIC ───────────────────────────────────────────
+// ── TIMER & RESTART ────────────────────────────────────────
 function startTimer() {
   clearInterval(timerHandle);
   timeLeft = 45;
@@ -130,10 +131,10 @@ restartBtn.onclick = () => {
   restartBtn.disabled = true;
 };
 
-// ── START EVENT ───────────────────────────────────────────
+// ── START GAME ────────────────────────────────────────────
 startBtn.onclick = async () => {
-  startBtn.disabled = true;
-  mintBtn.disabled  = false;
+  startBtn.disabled   = true;
+  mintBtn.disabled    = false;
   restartBtn.disabled = true;
   if (!imageList.length) await loadImageList();
   const img = pickRandomImage();
@@ -141,30 +142,30 @@ startBtn.onclick = async () => {
   startTimer();
 };
 
-// ── MINT SNAPSHOT ON-CHAIN ─────────────────────────────────
+// ── MINT SNAPSHOT → nft.storage → ON-CHAIN ───────────────
 mintBtn.onclick = async () => {
   try {
-    // snapshot grid
-    const canvas   = await html2canvas(puzzleGrid, { useCORS:true });
+    // take snapshot
+    const canvas   = await html2canvas(puzzleGrid, { useCORS: true });
     const snapshot = canvas.toDataURL('image/png');
 
-    // send to NFT.storage function
+    // pin to nft.storage via Netlify fn
     const res = await fetch('/.netlify/functions/nftstorage', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ snapshot })
     });
     if (!res.ok) throw new Error(res.statusText);
     const { metadataCid } = await res.json();
 
-    // mint
+    // mint using ipfs.io gateway
     const uri = `https://ipfs.io/ipfs/${metadataCid}`;
-    const tx = await contract.mintNFT(await signer.getAddress(), uri);
+    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
-    alert('🎉 Your puzzle NFT is now live!');
+    alert('🎉 Your NFT is live!');
   } catch (err) {
     console.error(err);
-    alert('Oops! ' + err.message);
+    alert('Error: ' + err.message);
   }
 };
