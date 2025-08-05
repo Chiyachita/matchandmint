@@ -36,7 +36,7 @@ btnConnect.onclick = async () => {
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
   const addr = await signer.getAddress();
-  status.textContent = `Connected: ${addr.slice(0,6)}…${addr.slice(-4)}`;
+  status.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)}`;
   btnStart.disabled = false;
 };
 
@@ -47,10 +47,11 @@ function buildPuzzle(imgUrl) {
     const cell = document.createElement('div');
     cell.className     = 'cell';
     cell.dataset.index = i;
-    const x = (i % COLS)*100, y = Math.floor(i / COLS)*100;
+    const x = (i % COLS) * 100;
+    const y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
       backgroundImage: `url(${imgUrl})`,
-      backgroundSize:  `${COLS*100}px ${ROWS*100}px`,
+      backgroundSize:  `${COLS * 100}px ${ROWS * 100}px`,
       backgroundPosition: `-${x}px -${y}px`
     });
     cell.draggable = true;
@@ -92,54 +93,45 @@ btnRestart.onclick = () => {
   clearInterval(timerHandle);
   grid.innerHTML = '';
   timerEl.textContent = '45';
-  btnStart.disabled = false;
-  btnMint.disabled  = true;
+  btnStart.disabled   = false;
+  btnMint.disabled    = true;
   btnRestart.disabled = true;
 };
 
 // ── START GAME ────────────────────────────────────────────
 btnStart.onclick = () => {
-  // you can swap this to randomize preview.src if you like
   preview.src = preview.src || 'preview.png';
   buildPuzzle(preview.src);
-  btnStart.disabled = true;
-  btnMint.disabled  = false;
+  btnStart.disabled   = true;
+  btnMint.disabled    = false;
   btnRestart.disabled = true;
   startTimer();
 };
 
-// ── MINT AS ON-CHAIN DATA‐URI ──────────────────────────────
+// ── MINT VIA ipfs.io GATEWAY ──────────────────────────────
 btnMint.onclick = async () => {
   try {
-    // snapshot puzzle to base64 PNG
+    // 1) snapshot puzzle as base64 PNG
     const canvas   = await html2canvas(grid);
     const snapshot = canvas.toDataURL('image/png');
 
-    // build metadata JSON with embedded image
-    const metadata = {
-      name:        `Puzzle #${Date.now()}`,
-      description: 'My custom 4×4 puzzle!',
-      image:       snapshot,
-      properties: {
-        files: [{ uri: snapshot, type: 'image/png' }],
-        category: 'image'
-      }
-    };
+    // 2) pin via nft.storage or Pinata function as before
+    const res = await fetch('/.netlify/functions/nftstorage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot })
+    });
+    if (!res.ok) throw new Error('Storage function failed');
+    const { metadataCid } = await res.json();
 
-    // encode metadata JSON to base64
-    const b64     = btoa(JSON.stringify(metadata));
-    const dataURI = `data:application/json;base64,${b64}`;
-
-    // mint on-chain with the data URI
-    const tx = await contract.mintNFT(
-      await signer.getAddress(),
-      dataURI
-    );
+    // 3) mint using ipfs.io gateway URL
+    const uri = `https://ipfs.io/ipfs/${metadataCid}`;
+    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
-    alert('🎉 Minted! TokenURI includes your metadata & image.');
+    alert('🎉 Minted!');
   } catch (err) {
-    console.error('Mint failed:', err);
-    alert('Mint error: ' + err.message);
+    console.error('Mint error:', err);
+    alert('Mint failed: ' + err.message);
   }
 };
