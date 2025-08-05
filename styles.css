@@ -102,3 +102,16 @@ body {
     padding: .4rem .8rem;
   }
 }
+/* Ensure the preview image is always displayed and nicely framed */
+.preview {
+  margin-top: 1rem;
+  text-align: center;
+}
+.preview img {
+  display: block;         /* force it visible */
+  margin: 0 auto;
+  max-width: 400px;
+  width: 90%;
+  border: 2px solid #7645d9;
+  border-radius: 8px;
+}
