@@ -43,7 +43,7 @@ btnConnect.onclick = async () => {
   btnStart.disabled = false;
 };
 
-// ── BUILD PUZZLE ───────────────────────────────────────────
+// ── BUILD PUZZLE GRID ─────────────────────────────────────
 function buildPuzzle(imgUrl) {
   grid.innerHTML = '';
   for (let i = 0; i < ROWS * COLS; i++) {
@@ -100,7 +100,8 @@ btnRestart.onclick = () => {
 
 // ── START GAME ────────────────────────────────────────────
 btnStart.onclick = () => {
-  preview.src = preview.src || 'preview.png';  // set your initial image
+  // set preview.src however you like (random list or fixed preview.png)
+  preview.src = preview.src || 'preview.png';
   buildPuzzle(preview.src);
   btnStart.disabled   = true;
   btnMint.disabled    = false;
@@ -108,14 +109,14 @@ btnStart.onclick = () => {
   startTimer();
 };
 
-// ── MINT VIA nft.storage & ON-CHAIN with ipfs.io gateway ──
+// ── MINT VIA nft.storage & ON-CHAIN ───────────────────────
 btnMint.onclick = async () => {
   try {
-    // 1) snapshot to base64 PNG
-    const canvas   = await html2canvas(grid);
+    // 1) snapshot puzzle to a base64 PNG
+    const canvas   = await html2canvas(grid, { useCORS: true });
     const snapshot = canvas.toDataURL('image/png');
 
-    // 2) send snapshot to your Netlify function for pinning
+    // 2) send snapshot to your Netlify function (nftstorage)
     const res = await fetch('/.netlify/functions/nftstorage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -129,7 +130,7 @@ btnMint.onclick = async () => {
     const tx = await contract.mintNFT(await signer.getAddress(), metadataUri);
     await tx.wait();
 
-    alert('🎉 Minted! Metadata and snapshot will show up in Explorer.');
+    alert('🎉 Minted! Check the Metadata tab in Explorer.');
     btnMint.disabled    = true;
     btnStart.disabled   = false;
     btnRestart.disabled = false;
