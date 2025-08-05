@@ -8,18 +8,7 @@
 </head>
 <body>
   <div class="container">
-    <h1 class="title"><span class="emoji">🧩</span>Match and Mint</h1>
-
-    <div class="how-to-play">
-      <h2><span class="emoji">📝</span>How to Play</h2>
-      <ol>
-        <li>Connect your wallet (MetaMask/Backpack/etc.).</li>
-        <li>Click “Start Game” to load a 4×4 puzzle.</li>
-        <li>Drag pieces to rearrange before the timer hits 0.</li>
-        <li>Click “Mint NFT” to capture and mint your arrangement.</li>
-        <li>If time runs out, mint your “masterpiece” or Restart.</li>
-      </ol>
-    </div>
+    <h1>🧩 Match & Mint Puzzle</h1>
 
     <div class="controls">
       <button id="connectInjectedBtn">🔌 Connect Wallet</button>
@@ -31,20 +20,23 @@
       <button id="restartBtn" disabled>🔄 Restart</button>
     </div>
 
-    <div class="timer">⏲️ Time Left: <span id="timeLeft">45</span>s</div>
+    <p>⏲️ Time Left: <span id="timeLeft">45</span>s</p>
+
+    <!-- 4×4 puzzle grid -->
     <div id="puzzleGrid" class="grid"></div>
+
+    <!-- reference preview below -->
     <div class="preview">
-      <img src="preview.png" alt="Puzzle Preview" />
+      <img id="referenceImg" src="preview.png" alt="Reference Puzzle" />
     </div>
   </div>
 
-  <!-- 1) WalletConnect Provider UMD -->
+  <!-- external libs -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-  <!-- 2) ethers.js UMD -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <!-- 3) html2canvas for snapshots -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <!-- 4) Your application logic -->
+
+  <!-- your app logic -->
   <script src="app.js"></script>
 </body>
 </html>
