@@ -1,74 +1,104 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* Reset & Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 body {
-  background: #241645;
-  color: #eee;
-  font-family: sans-serif;
+  background: #1e1b2e;
+  color: #e0d7f1;
+  font-family: 'Segoe UI', sans-serif;
   display: flex;
   justify-content: center;
-  padding: 20px;
+  padding: 2rem;
 }
-.container { width: 420px; }
-.title {
-  font-size: 2rem;
+.container {
+  max-width: 500px;
+  width: 100%;
   text-align: center;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
-.title .emoji { font-size: 1.6rem; margin-right: 8px; color: #9b59b6; }
+
+/* Title & How To */
+.title { font-size: 2rem; margin-bottom: 1rem; }
+.emoji { margin-right: .5rem; }
 .how-to-play {
-  background: rgba(255,255,255,0.05);
-  padding: 16px;
-  border-radius: 10px;
-  margin-bottom: 24px;
+  background: #2a2640;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
 }
-.how-to-play h2 { display: flex; align-items: center; font-size: 1.2rem; margin-bottom: 12px; }
-.how-to-play h2 .emoji { margin-right: 6px; }
-.how-to-play ol {
-  padding-left: 20px;
-  list-style: decimal inside;
-  color: #ccc;
-}
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
+.how-to-play h2 { font-size: 1.25rem; margin-bottom: .5rem; }
+.how-to-play ol { list-style: decimal inside; }
+.how-to-play li { margin-bottom: .5rem; }
+
+/* Controls */
+.controls { margin: .75rem 0; }
 .controls button {
-  background: #8e44ad;
+  background: #7645d9;
   border: none;
   color: #fff;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin: 0 6px;
-  font-size: 1rem;
+  font-size: .9rem;
+  padding: .5rem 1rem;
+  margin: 0 .25rem;
+  border-radius: 6px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
+  transition: background .2s;
 }
-.controls button:disabled { opacity: 0.5; cursor: not-allowed; }
-.timer { text-align: center; margin-bottom: 20px; font-size: 1rem; }
+.controls button:disabled {
+  background: #4b3c6b;
+  cursor: not-allowed;
+}
+.controls button:hover:not(:disabled) {
+  background: #8a6fe0;
+}
+#walletStatus {
+  display: inline-block;
+  margin-left: .5rem;
+  font-size: .9rem;
+  vertical-align: middle;
+}
+
+/* Timer */
+.timer { font-size: 1rem; margin: 1rem 0; }
+
+/* Puzzle Grid */
 .grid {
-  width: 400px;
-  height: 400px;
-  margin: 0 auto 20px;
   display: grid;
-  grid-template-columns: repeat(4,1fr);
-  grid-template-rows: repeat(4,1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
-  background: rgba(255,255,255,0.03);
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1;
+  margin: 0 auto 1rem;
+  background: #2a2640;
   padding: 4px;
   border-radius: 8px;
 }
-.grid .cell { background: #341e59; border-radius: 4px; }
-.preview {
-  width: 200px;
-  height: 200px;
-  margin: 0 auto;
-  border: 2px solid #9b59b6;
-  border-radius: 8px;
-  overflow: hidden;
+.cell {
+  background: #3b3453;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  cursor: grab;
 }
-.preview img { width: 100%; height: 100%; object-fit: cover; }
+.cell:active { cursor: grabbing; }
+
+/* Preview */
+.preview img {
+  width: 100%;
+  max-width: 400px;
+  border: 2px solid #7645d9;
+  border-radius: 8px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container { padding: 1rem; }
+  .controls button {
+    font-size: .8rem;
+    padding: .4rem .8rem;
+  }
+}
