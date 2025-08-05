@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Match and Mint</title>
+  <title>Match and Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -13,18 +13,16 @@
     <div class="how-to-play">
       <h2><span class="emoji">📝</span>How to Play</h2>
       <ol>
-        <li>Choose a wallet: Injected (MetaMask/Backpack/etc.) or WalletConnect.</li>
-        <li>Click “Injected Wallet” or “WalletConnect.”</li>
-        <li>Then click “Start Game.”</li>
-        <li>Rearrange pieces before the timer hits 0.</li>
-        <li>Hit “Mint NFT” anytime until time’s up.</li>
-        <li>If you don’t finish, your arrangement is your masterpiece—feel free to mint or Restart.</li>
+        <li>Connect your wallet (MetaMask/Backpack/etc.).</li>
+        <li>Click “Start Game” to load a 4×4 puzzle.</li>
+        <li>Drag pieces to rearrange before the timer hits 0.</li>
+        <li>Click “Mint NFT” to capture and mint your arrangement.</li>
+        <li>If time runs out, mint your “masterpiece” or Restart.</li>
       </ol>
     </div>
 
     <div class="controls">
-      <button id="connectInjectedBtn">🔌 Injected Wallet</button>
-      <button id="connectWalletConnectBtn">🔗 WalletConnect</button>
+      <button id="connectInjectedBtn">🔌 Connect Wallet</button>
       <span id="walletStatus"></span>
     </div>
     <div class="controls">
@@ -40,12 +38,13 @@
     </div>
   </div>
 
-  <!-- UMD libraries (must load before app.js) -->
+  <!-- 1) WalletConnect Provider UMD -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <!-- 2) ethers.js UMD -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <!-- 3) html2canvas for snapshots -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <!-- Your application logic -->
+  <!-- 4) Your application logic -->
   <script src="app.js"></script>
 </body>
 </html>
