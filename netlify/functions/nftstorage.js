@@ -3,7 +3,7 @@ const { NFTStorage, File } = require('nft.storage');
 const { Buffer }           = require('buffer');
 
 if (!process.env.NFT_STORAGE_KEY) {
-  console.error('Missing NFT_STORAGE_KEY env var');
+  console.error('❌ Missing NFT_STORAGE_KEY env var');
 }
 
 const client = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
@@ -15,29 +15,28 @@ exports.handler = async function (event) {
       throw new Error('Invalid snapshot format');
     }
 
-    // strip the mime prefix and create a Buffer
-    const b64Data = snapshot.split(',')[1];
-    const imageBuffer = Buffer.from(b64Data, 'base64');
+    // Decode base64 data
+    const b64 = snapshot.split(',')[1];
+    const imageBuffer = Buffer.from(b64, 'base64');
 
-    // 1) pin the raw PNG
-    console.log('Pinning PNG to IPFS...');
+    // 1) Pin the PNG
+    console.log('📌 Pinning PNG...');
     const pngCid = await client.storeBlob(
       new File([imageBuffer], 'snapshot.png', { type: 'image/png' })
     );
-    console.log('PNG CID:', pngCid);
+    console.log('✅ PNG CID:', pngCid);
 
-    // 2) build metadata JSON and pin it
+    // 2) Build & pin metadata JSON
     const metadata = {
-      name:        `Puzzle Snapshot`,
-      description: `Your custom 4×4 puzzle arrangement.`,
+      name:        'Puzzle Snapshot',
+      description: 'Your custom 4×4 puzzle arrangement.',
       image:       `ipfs://${pngCid}`,
-      properties:  {
-        files: [
-          { uri: `ipfs://${pngCid}`, type: 'image/png' }
-        ]
+      properties: {
+        files: [{ uri: `ipfs://${pngCid}`, type: 'image/png' }]
       }
     };
-    console.log('Pinning metadata JSON...');
+
+    console.log('📌 Pinning metadata JSON...');
     const metadataCid = await client.storeBlob(
       new File(
         [Buffer.from(JSON.stringify(metadata))],
@@ -45,7 +44,7 @@ exports.handler = async function (event) {
         { type: 'application/json' }
       )
     );
-    console.log('Metadata CID:', metadataCid);
+    console.log('✅ Metadata CID:', metadataCid);
 
     return {
       statusCode: 200,
@@ -53,7 +52,7 @@ exports.handler = async function (event) {
     };
 
   } catch (err) {
-    console.error('Storage function error:', err);
+    console.error('🔥 Function error:', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message })
