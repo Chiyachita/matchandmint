@@ -228,6 +228,31 @@ async function mintSnapshot() {
   }
 }
 mintBtn.addEventListener('click', mintSnapshot);
+// inside initWeb3Modal() in app.js
+const providerOptions = {
+  // WalletConnect (as before)
+  walletconnect: {
+    package: WalletConnectProvider,
+    options: {
+      rpc: { [CHAIN_ID]: 'https://testnet-rpc.monad.xyz' },
+      chainId: CHAIN_ID
+    }
+  },
+  // Coinbase Wallet
+  coinbasewallet: {
+    package: CoinbaseWalletSDK,
+    options: {
+      appName: 'MatchAndMintPuzzle',
+      jsonRpcUrl: 'https://testnet-rpc.monad.xyz',
+      chainId: CHAIN_ID,
+      darkMode: false
+    }
+  }
+};
+web3Modal = new Web3Modal({
+  cacheProvider: false,
+  providerOptions
+});
 
 // ── INIT ───────────────────────────────────────────────────
 window.addEventListener('load', async () => {
