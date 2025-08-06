@@ -2,49 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Match &amp; Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Inject the NFT.Storage key so the browser can pin directly -->
+  <script>
+    // Netlify will replace {{PUBLIC_NFT_STORAGE_KEY}} with your actual key at build time
+    window.NFT_STORAGE_KEY = "{{PUBLIC_NFT_STORAGE_KEY}}";
+    console.log("🔑 NFT_STORAGE_KEY is:", window.NFT_STORAGE_KEY ? "✅ set" : "❌ missing");
+  </script>
+
 </head>
 <body>
   <div class="container">
-
     <h1>🧩 Match &amp; Mint Puzzle</h1>
 
-    <!-- Connect & Status -->
     <div class="controls">
       <button id="connectInjectedBtn">🔌 Connect Wallet</button>
       <span id="walletStatus"></span>
     </div>
 
-    <!-- Game Controls -->
     <div class="controls">
       <button id="startBtn" disabled>🎮 Start Game</button>
       <button id="mintBtn" disabled>💎 Mint NFT</button>
       <button id="restartBtn" disabled>🔄 Restart</button>
     </div>
 
-    <!-- Timer -->
     <p>⏲️ Time Left: <span id="timeLeft">45</span>s</p>
 
-    <!-- Puzzle Grid -->
     <div id="puzzleGrid" class="grid"></div>
 
-    <!-- Reference Image -->
     <div class="preview">
       <img id="referenceImg" src="preview.png" alt="Reference Puzzle" />
     </div>
-
   </div>
 
-  <!-- WalletConnect (if you still use it) -->
+  <!-- WalletConnect if needed -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   <!-- ethers.js -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <!-- html2canvas for snapshots -->
+  <!-- html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  
+
   <!-- Your application logic -->
-  <script src="app.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
