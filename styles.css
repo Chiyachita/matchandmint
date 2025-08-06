@@ -1,117 +1,115 @@
-/* Reset & Base */
-*,
-*::before,
-*::after {
+/* styles.css */
+
+:root {
+  --bg: #1e1a2b;
+  --fg: #e0dfe7;
+  --accent: #8a5af8;
+  --cell-size: 100px;
+  --gap: 6px;
+}
+
+* {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
+
 body {
-  background: #1e1b2e;
-  color: #e0d7f1;
-  font-family: 'Segoe UI', sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, sans-serif;
+  min-height: 100vh;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 2rem;
 }
+
 .container {
-  max-width: 500px;
+  max-width: 400px;
   width: 100%;
+  padding: 16px;
   text-align: center;
 }
 
-/* Title & How To */
-.title { font-size: 2rem; margin-bottom: 1rem; }
-.emoji { margin-right: .5rem; }
-.how-to-play {
-  background: #2a2640;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  text-align: left;
+h1 {
+  margin-bottom: 16px;
+  font-size: 1.5rem;
 }
-.how-to-play h2 { font-size: 1.25rem; margin-bottom: .5rem; }
-.how-to-play ol { list-style: decimal inside; }
-.how-to-play li { margin-bottom: .5rem; }
 
-/* Controls */
-.controls { margin: .75rem 0; }
-.controls button {
-  background: #7645d9;
+.controls {
+  margin-bottom: 12px;
+}
+
+button {
+  background-color: var(--accent);
   border: none;
   color: #fff;
-  font-size: .9rem;
-  padding: .5rem 1rem;
-  margin: 0 .25rem;
+  padding: 8px 12px;
+  margin: 0 4px;
   border-radius: 6px;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background .2s;
+  transition: background-color 0.2s ease;
 }
-.controls button:disabled {
-  background: #4b3c6b;
+
+button:disabled {
+  background-color: #555;
   cursor: not-allowed;
 }
-.controls button:hover:not(:disabled) {
-  background: #8a6fe0;
+
+button:not(:disabled):hover {
+  background-color: #a278f8;
 }
+
 #walletStatus {
-  display: inline-block;
-  margin-left: .5rem;
-  font-size: .9rem;
-  vertical-align: middle;
+  font-size: 0.9rem;
+  margin-left: 8px;
 }
 
-/* Timer */
-.timer { font-size: 1rem; margin: 1rem 0; }
+p {
+  margin: 12px 0;
+  font-size: 1rem;
+}
 
-/* Puzzle Grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  width: 100%;
-  max-width: 400px;
-  aspect-ratio: 1;
-  margin: 0 auto 1rem;
-  background: #2a2640;
-  padding: 4px;
-  border-radius: 8px;
+  grid-template-columns: repeat(4, var(--cell-size));
+  grid-template-rows:    repeat(4, var(--cell-size));
+  gap: var(--gap);
+  justify-content: center;
+  margin: 0 auto 16px;
+  user-select: none;
 }
+
 .cell {
-  background: #3b3453;
-  border-radius: 4px;
-  background-size: cover;
+  width: var(--cell-size);
+  height: var(--cell-size);
+  background-color: #2a2540;
+  background-repeat: no-repeat;
   background-position: center;
+  background-size: cover;
+  border-radius: 4px;
   cursor: grab;
 }
-.cell:active { cursor: grabbing; }
 
-/* Preview */
+.cell:active {
+  cursor: grabbing;
+}
+
+.preview {
+  margin-top: 8px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 4px;
+  width: calc(var(--cell-size) * 2 + var(--gap));
+  height: calc(var(--cell-size) * 2 + var(--gap));
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+}
+
 .preview img {
   width: 100%;
-  max-width: 400px;
-  border: 2px solid #7645d9;
-  border-radius: 8px;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .container { padding: 1rem; }
-  .controls button {
-    font-size: .8rem;
-    padding: .4rem .8rem;
-  }
-}
-/* Ensure the preview image is always displayed and nicely framed */
-.preview {
-  margin-top: 1rem;
-  text-align: center;
-}
-.preview img {
-  display: block;         /* force it visible */
-  margin: 0 auto;
-  max-width: 400px;
-  width: 90%;
-  border: 2px solid #7645d9;
-  border-radius: 8px;
+  height: 100%;
+  object-fit: contain;
 }
