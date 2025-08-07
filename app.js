@@ -96,7 +96,7 @@
       else await injected.enable();
 
       const ethersLib   = window.ethers;
-      const ethProvider = new ethersLib.providers.Web3Provider(injected, 'any');
+     const ethProvider = new ethersLib.Web3Provider(injected, 'any');
       await switchToTestnet(ethProvider);
       finalizeConnect(ethProvider);
     } catch (e) {
