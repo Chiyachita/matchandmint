@@ -6,25 +6,40 @@
   <title>Match &amp; Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- 1) Load config.js (must be plain ASCII with no BOM!) -->
+  <!-- Load config before app logic -->
   <script src="config.js"></script>
-  <!-- 2) Then your app logic -->
   <script src="app.js" defer></script>
 </head>
 <body>
   <div class="container">
     <h1>🧩 Match &amp; Mint Puzzle</h1>
+
+    <!-- ← Add this block for How to Play -->
+    <div class="how-to-play">
+      <h2>📝 How to Play</h2>
+      <ol>
+        <li>Click <strong>Connect Wallet</strong> and switch to <strong>Monad Testnet</strong> (Chain ID 10143).</li>
+        <li>Press <strong>Start Game</strong> to shuffle a random puzzle.</li>
+        <li>Drag and drop the pieces to reassemble it before the timer hits 0.</li>
+        <li>You can hit <strong>Mint NFT</strong> any time while the clock runs—or once time’s up.</li>
+      </ol>
+    </div>
+
     <div class="controls">
       <button id="connectInjectedBtn">🔌 Connect Wallet</button>
       <span id="walletStatus"></span>
     </div>
+
     <div class="controls">
       <button id="startBtn" disabled>🎮 Start Game</button>
       <button id="mintBtn" disabled>💎 Mint NFT</button>
       <button id="restartBtn" disabled>🔄 Restart</button>
     </div>
+
     <p>⏲️ Time Left: <span id="timeLeft">45</span>s</p>
+
     <div id="puzzleGrid" class="grid"></div>
+
     <div class="preview">
       <img id="referenceImg" src="preview.png" alt="Reference Puzzle" />
     </div>
