@@ -1,132 +1,148 @@
-(async()=>{
-  // --- CONFIG ---
-  const GITHUB_JSON = 'https://raw.githubusercontent.com/Chiyachita/match-and-mint-assets/main/list.json';
-  const TIMER_SEC = 45;
-  const NFTSTORAGE_KEY = '04be0e42.406dcb3178d8478585acd3b2f22ddfdf';
-  const CONTRACT_ADDR = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
-  const CONTRACT_ABI = [
-    {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
-    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},
-    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},
-    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},
-    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},
-    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},
-    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"uri","type":"string"}],"name":"mintNFT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
-    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
-    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
-    {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
-    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},
-    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
-    {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-    {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-    {"inputs":[],"name":"nextTokenId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-    {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}
-  ];
+// ── CONFIG ────────────────────────────────────────────────────
+const CHAIN_ID     = 10143;
+const CHAIN_ID_HEX = '0x279F';
 
-  let provider, signer, contract;
-  let pick = [], solved=false, interval, time=TIMER_SEC;
+const GITHUB_OWNER  = 'YourUser';             // ← your GitHub username
+const ASSETS_REPO   = 'match-and-mint-assets';
+const GITHUB_BRANCH = 'main';
+const LIST_URL      = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
+const IMAGES_BASE   = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/images`;
 
-  const web3Modal = new window.Web3Modal.default({ cacheProvider:false, providerOptions:{} });
-  document.getElementById('connect').onclick = async ()=>{
-    try {
-      const inst = await web3Modal.connect();
-      provider = new ethers.providers.Web3Provider(inst);
-      await provider.send('wallet_addEthereumChain',[{
-        chainId:'0x279F',
-        chainName:'Monad Testnet',
-        rpcUrls:['https://testnet-rpc.monad.xyz'],
-        nativeCurrency:{ name:'Monad', symbol:'MON', decimals:18 }
-      }]).catch(()=>{});
-      signer = provider.getSigner();
-      contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-      document.getElementById('connect').innerText='Wallet Connected';
-    } catch(e) {
-      console.error(e);
-      alert('เชื่อม Wallet ไม่ติด ลองใหม่');
+// ── UI ELEMENTS ───────────────────────────────────────────────
+const btnConnect = document.getElementById('btnConnect');
+const btnStart   = document.getElementById('btnStart');
+const btnMint    = document.getElementById('btnMint');
+const btnRestart = document.getElementById('btnRestart');
+const timerEl    = document.getElementById('timer');
+const grid       = document.getElementById('puzzleGrid');
+const preview    = document.getElementById('previewImg');
+
+// ── STATE ─────────────────────────────────────────────────────
+let provider, signer, imageList = [];
+let timeLeft = 45, timerId = null, dragged = null;
+const ROWS = 4, COLS = 4;
+
+// ── HELPERS ───────────────────────────────────────────────────
+function shuffle(a) {
+  for (let i=a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+}
+
+async function loadImageList() {
+  const res = await fetch(LIST_URL);
+  imageList = await res.json().catch(_=>[]);
+}
+
+function pickRandomImage() {
+  if (!imageList.length) return `${IMAGES_BASE}/preview.png`;
+  const fn = imageList[Math.floor(Math.random()*imageList.length)];
+  return `${IMAGES_BASE}/${fn}`;
+}
+
+function isSolved() {
+  return [...grid.children].every((c,i)=>+c.dataset.index===i);
+}
+
+// ── CONNECT ───────────────────────────────────────────────────
+async function connect() {
+  if (!window.ethereum) {
+    alert('No injected wallet found!');
+    return;
+  }
+  await window.ethereum.request({ method:'eth_requestAccounts' });
+  provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+  const net = await provider.getNetwork();
+  if (net.chainId !== CHAIN_ID) {
+    await provider.send('wallet_switchEthereumChain',[{chainId:CHAIN_ID_HEX}]);
+  }
+  signer = provider.getSigner();
+  btnConnect.textContent = '✅ Connected';
+  btnStart.disabled = false;
+}
+
+// ── PUZZLE SETUP ─────────────────────────────────────────────
+function buildPuzzle(imgUrl) {
+  grid.innerHTML = '';
+  const cells = [];
+  for (let i=0; i<ROWS*COLS; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = i;
+    const x = (i%COLS)*100, y = Math.floor(i/COLS)*100;
+    Object.assign(cell.style, {
+      backgroundImage:`url(${imgUrl})`,
+      backgroundPosition:`-${x}px -${y}px`
+    });
+    cell.draggable = true;
+    cell.addEventListener('dragstart', e=>dragged=e.target);
+    cell.addEventListener('dragover', e=>e.preventDefault());
+    cell.addEventListener('drop', onDrop);
+    cells.push(cell);
+  }
+  shuffle(cells);
+  cells.forEach(c=>grid.append(c));
+}
+
+// swap on drop
+function onDrop(e) {
+  e.preventDefault();
+  if (!dragged) return;
+  const kids = [...grid.children];
+  const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target);
+  if (i1>=0 && i2>=0) {
+    grid.insertBefore(dragged, i2>i1? e.target.nextSibling : e.target);
+  }
+}
+
+// ── TIMER & BUTTON LOGIC ────────────────────────────────────
+function startTimer() {
+  clearInterval(timerId);
+  timeLeft = 45;
+  timerEl.textContent = `⏱ Time Left: ${timeLeft}s`;
+  timerId = setInterval(()=>{
+    timerEl.textContent = `⏱ Time Left: ${--timeLeft}s`;
+    if (timeLeft<=0) {
+      clearInterval(timerId);
+      alert(
+        isSolved()
+          ? '⏰ Time’s up—but you nailed it! Mint your perfect masterpiece 🌟'
+          : '⏳ Time’s up! This is your masterpiece—feel free to mint or Restart.'
+      );
+      btnStart.disabled = false;
+      btnRestart.disabled = false;
+      btnMint.disabled = false;
     }
-  };
+  },1000);
+}
 
-  document.getElementById('start').onclick = () => {
-    if(!signer) return alert('ต้องเชื่อม Wallet ก่อนนะ!');
-    initPuzzle();
-    document.getElementById('mint').disabled = false;
-  };
+// ── EVENT BINDINGS ───────────────────────────────────────────
+btnConnect.addEventListener('click', connect);
 
-  async function initPuzzle() {
-    clearInterval(interval);
-    solved=false;
-    time=TIMER_SEC;
-    document.getElementById('timer').innerText = time;
-    const data = await fetch(GITHUB_JSON).then(r=>r.json());
-    pick = data.sort(()=>0.5-Math.random()).slice(0,16);
-    document.getElementById('ref').src = pick[0];
-    const puzzle = document.getElementById('puzzle');
-    puzzle.innerHTML = '';
-    pick.forEach(url=>{
-      const d = document.createElement('div');
-      d.className='piece';
-      d.style.backgroundImage = `url(${url})`;
-      d.draggable = true;
-      puzzle.appendChild(d);
-    });
-    addDragDrop();
-    interval = setInterval(()=>{
-      time--; document.getElementById('timer').innerText = time;
-      if(time<=0) {
-        clearInterval(interval);
-        if(!solved){ mintIt(); }
-      }
-    },1000);
-  }
+btnStart.addEventListener('click', async()=>{
+  btnStart.disabled = true;
+  btnMint.disabled  = false;
+  btnRestart.disabled = true;
 
-  function addDragDrop(){
-    const puzzle = document.getElementById('puzzle');
-    let dragSrc=null;
-    puzzle.addEventListener('dragstart',e=>{ if(e.target.classList.contains('piece')) dragSrc=e.target; });
-    puzzle.addEventListener('dragover',e=>e.preventDefault());
-    puzzle.addEventListener('drop',e=>{
-      e.preventDefault();
-      const tgt=e.target;
-      if(tgt.classList.contains('piece') && dragSrc!==tgt){
-        [dragSrc.style.backgroundImage, tgt.style.backgroundImage] =
-          [tgt.style.backgroundImage, dragSrc.style.backgroundImage];
-        checkSolved();
-      }
-    });
-  }
+  if (!imageList.length) await loadImageList();
+  const img = pickRandomImage();
+  buildPuzzle(img);
+  preview.src = img;
+  startTimer();
+});
 
-  function checkSolved(){
-    const pieces = Array.from(document.querySelectorAll('.piece'));
-    const ok = pieces.every((el,i)=>{
-      const url = el.style.backgroundImage.slice(5,-2);
-      return url === pick[i];
-    });
-    if(ok && !solved){
-      solved = true;
-      clearInterval(interval);
-      document.getElementById('timer').innerText = '🎉';
-      alert('สุดยอด! จัดเรียงครบแล้ว กด Mint Snapshot ได้เลย!');
-    }
-  }
+btnRestart.addEventListener('click', ()=>{
+  clearInterval(timerId);
+  grid.innerHTML = '';
+  timerEl.textContent = '⏱ Time Left: 45s';
+  btnStart.disabled = false;
+  btnMint.disabled  = true;
+  btnRestart.disabled = true;
+});
 
-  async function mintIt(){
-    document.getElementById('mint').disabled = true;
-    const canvas = await html2canvas(document.getElementById('puzzle'));
-    const blob = await new Promise(r=>canvas.toBlob(r,'image/png'));
-    const client = new window.NFTStorage.NFTStorage({ token: NFTSTORAGE_KEY });
-    const cid = (await client.store({
-      image: blob,
-      name: 'Puzzle Snapshot',
-      description: 'Snapshot from Match & Mint 4×4'
-    })).url;
-    const tx = await contract.mintNFT(await signer.getAddress(), cid);
-    await tx.wait();
-    alert('Minted! CID: '+cid);
-  }
-  document.getElementById('mint').onclick = mintIt;
-})();
+// ── (PLACEHOLDER) MINT HANDLER ──────────────────────────────
+btnMint.addEventListener('click', ()=>{
+  // ← hook your NFT minting here (Pinata / NFT.Storage + on-chain)
+  alert('✨ Mint code goes here! ✨');
+});
