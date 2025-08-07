@@ -73,30 +73,44 @@ async function switchToMonad(ethProvider) {
 
 // ── MULTI‐BRAND INJECTED CONNECT ────────────────────────────
 function getInjectedProvider() {
-  const { ethereum } = window;
-  if (!ethereum) return null;
-  if (Array.isArray(ethereum.providers)) {
-    return ethereum.providers.find(p => p.isMetaMask) || ethereum.providers[0];
+  const { ethereum, web3 } = window;
+  // ถ้ามี window.ethereum
+  if (ethereum) {
+    // กรณีมีหลาย provider
+    if (Array.isArray(ethereum.providers)) {
+      return ethereum.providers.find(p => p.isMetaMask) || ethereum.providers[0];
+    }
+    return ethereum;
   }
-  return ethereum;
+  // กรณี legacy DApp browsers
+  if (web3 && web3.currentProvider) {
+    return web3.currentProvider;
+  }
+  return null;
 }
 
 async function connectInjected() {
   const injected = getInjectedProvider();
   if (!injected) {
-    alert('No injected wallet found! Try WalletConnect.');
+    alert('No injected wallet found! Make sure you have MetaMask or other wallet extension installed.');
     return;
   }
   try {
-    await injected.request({ method: 'eth_requestAccounts' });
+    // ถ้าเป็น EIP-1102
+    if (injected.request) {
+      await injected.request({ method: 'eth_requestAccounts' });
+    } else if (injected.enable) {
+      await injected.enable();
+    }
     const ethProvider = new ethers.providers.Web3Provider(injected, 'any');
     await switchToMonad(ethProvider);
     finishConnect(ethProvider);
   } catch (err) {
     console.error('Injected connect failed', err);
-    alert('Failed to connect injected wallet.');
+    alert('Failed to connect injected wallet: ' + (err.message||err));
   }
 }
+
 
 // ── WALLETCONNECT CONNECT ──────────────────────────────────
 async function connectWalletConnect() {
