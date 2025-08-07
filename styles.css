@@ -1,37 +1,41 @@
+/* --- reset & basics --- */
+* { box-sizing: border-box; margin:0; padding:0; }
 body {
-  font-family: sans-serif;
-  text-align: center;
-  padding: 20px;
-}
-#controls {
-  margin-bottom: 10px;
+  background:#241443; color:#eee;
+  font-family:sans-serif; text-align:center;
+  display:flex; flex-direction:column; align-items:center;
+  padding:1rem;
 }
 button {
-  padding: 10px 20px;
-  font-size: 16px;
-  margin: 0 5px;
-  cursor: pointer;
+  background:#5e2a8c; color:#fff; border:none;
+  padding:.5rem 1rem; margin:.5rem; border-radius:.25rem;
+  cursor:pointer;
 }
-#timer {
-  font-size: 24px;
-  display: inline-block;
-  width: 60px;
+button:disabled { opacity:.4; cursor:not-allowed; }
+header { margin-bottom:1rem; }
+
+/* --- controls & timer --- */
+#controls { margin:1rem 0; }
+#timer { margin-left:1rem; }
+
+/* --- puzzle grid --- */
+#puzzleGrid {
+  width:400px; height:400px;
+  display:grid; grid-template:repeat(4,1fr)/repeat(4,1fr);
+  gap:2px; background:#241443;
 }
-#puzzle {
-  display: grid;
-  grid-template-columns: repeat(4, 100px);
-  grid-gap: 5px;
-  margin: 20px auto;
-  width: fit-content;
+.cell {
+  background-size:400px 400px;
+  background-repeat:no-repeat;
+  border:1px solid #2e1b4f;
+  cursor:grab;
 }
-.piece {
-  width: 100px;
-  height: 100px;
-  border: 1px solid #ccc;
-  background-size: cover;
-  cursor: grab;
+
+/* --- preview --- */
+#preview {
+  margin-top:1rem;
+  width:200px; height:200px;
+  border:2px solid #7e4cbc;
+  display:flex; align-items:center; justify-content:center;
 }
-#ref {
-  max-width: 300px;
-  margin: 10px auto;
-}
+#preview img { max-width:100%; max-height:100%; }
