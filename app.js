@@ -3,16 +3,45 @@
 // ── PICK AN INJECTED WALLET PROVIDER ────────────────────────
 function getInjectedProvider() {
   const { ethereum } = window;
-  // If multiple wallets injected (Backpack, Coinbase, MetaMask, etc.)
+  
+  // If multiple wallets injected
   if (ethereum?.providers && Array.isArray(ethereum.providers)) {
-    // Prefer MetaMask / Coinbase / Backpack, else take the first
-    return (
-      ethereum.providers.find(p =>
-        p.isMetaMask || p.isCoinbaseWallet || p.isBackpack
-      ) || ethereum.providers[0]
+    // Show wallet selection dialog
+    const availableWallets = ethereum.providers.map((provider, index) => {
+      let name = 'Unknown Wallet';
+      if (provider.isMetaMask) name = 'MetaMask';
+      else if (provider.isCoinbaseWallet) name = 'Coinbase Wallet';
+      else if (provider.isBackpack) name = 'Backpack';
+      else if (provider.isPhantom) name = 'Phantom';
+      else if (provider.isBraveWallet) name = 'Brave Wallet';
+      else if (provider.isRabby) name = 'Rabby';
+      else if (provider.isTrust) name = 'Trust Wallet';
+      else if (provider.isOKExWallet) name = 'OKX Wallet';
+      
+      return { provider, name, index };
+    });
+    
+    // Create selection prompt
+    const walletOptions = availableWallets
+      .map((w, i) => `${i + 1}: ${w.name}`)
+      .join('\n');
+    
+    const selection = prompt(
+      `Multiple wallets detected. Choose one:\n${walletOptions}\n\nEnter number (or press Cancel for first available):`
     );
+    
+    if (selection && !isNaN(selection)) {
+      const index = parseInt(selection) - 1;
+      if (index >= 0 && index < availableWallets.length) {
+        return availableWallets[index].provider;
+      }
+    }
+    
+    // Default to first provider if cancelled or invalid selection
+    return ethereum.providers[0];
   }
-  // Fallback to single injected provider
+  
+  // Single wallet or standard ethereum object
   return ethereum;
 }
 
@@ -93,17 +122,33 @@ async function switchToMonad(ethersProvider) {
 async function connectInjected() {
   const injected = getInjectedProvider();
   if (!injected) {
-    alert('No injected wallet found! Try WalletConnect.');
+    alert('No injected wallet found! Please install a wallet like MetaMask, Coinbase Wallet, or Backpack, then try again.');
     return;
   }
+  
   try {
-    await injected.request({ method: 'eth_requestAccounts' });
+    // Request account access
+    const accounts = await injected.request({ method: 'eth_requestAccounts' });
+    if (!accounts || accounts.length === 0) {
+      throw new Error('No accounts available');
+    }
+    
     const ethersProvider = new ethers.providers.Web3Provider(injected, 'any');
     await switchToMonad(ethersProvider);
     finishConnect(ethersProvider);
   } catch (err) {
     console.error('Injected connect failed', err);
-    alert('Failed to connect injected wallet.');
+    let errorMsg = 'Failed to connect wallet.';
+    
+    if (err.code === 4001) {
+      errorMsg = 'Connection rejected by user.';
+    } else if (err.code === -32002) {
+      errorMsg = 'Connection request already pending. Please check your wallet.';
+    } else if (err.message.includes('accounts')) {
+      errorMsg = 'No accounts found. Please unlock your wallet.';
+    }
+    
+    alert(errorMsg);
   }
 }
 
