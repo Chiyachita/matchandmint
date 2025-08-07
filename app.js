@@ -1,11 +1,21 @@
 // app.js
 
-// ─── NFT.Storage KEY ────────────────────────────────────────
-const NFT_STORAGE_KEY = window.NFT_STORAGE_KEY;
-if (!NFT_STORAGE_KEY) {
-  alert('❌ Missing NFT_STORAGE_KEY! Please add it in your HTML.');
-  throw new Error('Missing NFT_STORAGE_KEY');
+
+// ─── NFT.Storage setup ───────────────────────────────────────
+const { NFTStorage } = window;                       // <-- UMD bundle exposes window.NFTStorage
+const NFT_STORAGE_KEY = window.NFT_STORAGE_KEY;      // <-- your key from index.html
+
+if (!NFTStorage) {
+  alert('❌ Missing nft.storage bundle! Check that you loaded bundle.umd.min.js first.');
+  throw new Error('NFTStorage class not found');
 }
+if (!NFT_STORAGE_KEY) {
+  alert('❌ Missing NFT_STORAGE_KEY! Please set it in your HTML before app.js.');
+  throw new Error('NFT_STORAGE_KEY not defined');
+}
+
+//──────────────────────────────────────────────────────────────
+// ... rest of your existing code unchanged until mintSnapshot()
 
 // ─── PICK INJECTED PROVIDER ─────────────────────────────────
 function getInjectedProvider() {
