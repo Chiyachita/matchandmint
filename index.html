@@ -1,27 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Match & Mint Puzzle 4×4</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Match & Mint Puzzle</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- ethers -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+  <!-- html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- NFT.Storage (ESM bundle) -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js"></script>
 </head>
 <body>
-  <h1>Match & Mint Puzzle 4×4</h1>
-  <div id="controls">
-    <button id="connect">Connect Wallet</button>
-    <button id="start">Start Game</button>
-    <button id="mint" disabled>Mint Snapshot</button>
-    <span id="timer">45</span>
-  </div>
-  <div id="puzzle"></div>
-  <img id="ref" src="" alt="Reference" />
+  <button id="btnConnect">🔌 Connect Wallet</button>
 
-  <!-- external libs -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
-  <script src="https://unpkg.com/@nftstorage/nft.storage/dist/bundle.min.js"></script>
-  <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <!-- your logic -->
-  <script src="app.js"></script>
+  <section id="howto">
+    <h2>🕹 How to Play</h2>
+    <ol>
+      <li>Connect your wallet and switch to Monad Testnet (chain 10143).</li>
+      <li>Press “Start Game” to shuffle a 4×4 puzzle.</li>
+      <li>Rearrange the pieces before the timer hits zero.</li>
+      <li>If you finish early, click “Mint NFT” anytime.</li>
+      <li>If time runs out, we’ll prompt you to mint what you’ve got.</li>
+    </ol>
+  </section>
+
+  <div id="controls">
+    <button id="btnStart" disabled>🎮 Start Game</button>
+    <button id="btnMint" disabled>💎 Mint NFT</button>
+    <button id="btnRestart" disabled>🔄 Restart</button>
+    <div id="timer">⏱ Time Left: <span id="timeLeft">45</span>s</div>
+  </div>
+
+  <div id="puzzleGrid" class="grid"></div>
+  <div id="previewBox">
+    <img id="preview" src="preview.png" alt="Puzzle Preview" />
+  </div>
+
+  <!-- our app code -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
