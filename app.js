@@ -1,8 +1,7 @@
-// app.js
-
 (async()=> {
   // ── CONFIG ─────────────────────────────────────────────────
-  const CHAIN_ID       = 10143, CHAIN_ID_HEX = '0x279F';
+  const CHAIN_ID       = 10143;
+  const CHAIN_ID_HEX   = '0x279F';
   const RPC_URL        = 'https://testnet-rpc.monad.xyz';
   const EXPLORER_URL   = 'https://testnet.monadexplorer.com';
   const CONTRACT_ADDR  = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
@@ -86,45 +85,46 @@
     return null;
   }
 
-async function connectInjected() {
-  const injected = getInjectedProvider();
-  if (!injected) return alert('No injected wallet found!');
+  async function connectInjected() {
+    const injected = getInjectedProvider();
+    if (!injected) {
+      return alert('No injected wallet found!');
+    }
+    try {
+      if (injected.request) await injected.request({method:'eth_requestAccounts'});
+      else await injected.enable();
 
-  try {
-    if (injected.request) await injected.request({ method: 'eth_requestAccounts' });
-    else await injected.enable();
+      const ethersLib   = window.ethers;
+      // ใช้ UMD แท้ ๆ
+      const ethProvider = new ethersLib.Web3Provider(injected, 'any');
 
-    const ethersLib   = window.ethers;
-    // <-- เปลี่ยนตรงนี้
-    const ethProvider = new ethersLib.Web3Provider(injected, 'any');
-
-    await switchToTestnet(ethProvider);
-    finalizeConnect(ethProvider);
-  } catch (e) {
-    console.error(e);
-    alert('Connect failed: ' + e.message);
+      await switchToTestnet(ethProvider);
+      finalizeConnect(ethProvider);
+    } catch (e) {
+      console.error('Injected connect failed', e);
+      alert('Connect failed: '+e.message);
+    }
   }
-}
 
-async function connectWalletConnect() {
-  try {
-    const wc = new window.WalletConnectProvider.default({
-      rpc: { [CHAIN_ID]: RPC_URL },
-      chainId: CHAIN_ID,
-    });
-    await wc.enable();
+  async function connectWalletConnect() {
+    try {
+      const wc = new window.WalletConnectProvider.default({
+        rpc:{[CHAIN_ID]:RPC_URL},
+        chainId:CHAIN_ID
+      });
+      await wc.enable();
 
-    const ethersLib   = window.ethers;
-    // <-- เปลี่ยนตรงนี้
-    const ethProvider = new ethersLib.Web3Provider(wc, 'any');
+      const ethersLib   = window.ethers;
+      // ใช้ UMD แท้ ๆ
+      const ethProvider = new ethersLib.Web3Provider(wc, 'any');
 
-    await switchToTestnet(ethProvider);
-    finalizeConnect(ethProvider);
-  } catch (e) {
-    console.error(e);
-    alert('WC failed: ' + e.message);
+      await switchToTestnet(ethProvider);
+      finalizeConnect(ethProvider);
+    } catch (e) {
+      console.error('WC connect failed', e);
+      alert('WC failed: '+e.message);
+    }
   }
-}
 
   // ── AFTER CONNECT ──────────────────────────────────────────
   async function finalizeConnect(ethProvider) {
@@ -227,6 +227,7 @@ async function connectWalletConnect() {
     try {
       const canvas   = await html2canvas(puzzleGrid);
       const snapshot = canvas.toDataURL('image/png');
+
       const resp = await fetch('/.netlify/functions/upload',{ 
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -234,9 +235,11 @@ async function connectWalletConnect() {
       });
       if(!resp.ok) throw new Error('Upload failed');
       const {cid} = await resp.json();
+
       const uri = `https://ipfs.io/ipfs/${cid}`;
       const tx  = await contract.mintNFT(await signer.getAddress(),uri);
       await tx.wait();
+
       alert('🎉 Minted! CID: '+cid);
       clearInterval(timerId);
       mintBtn.disabled    = true;
@@ -252,4 +255,4 @@ async function connectWalletConnect() {
   connectInjectedBtn.addEventListener('click', connectInjected);
   connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
 
-})(); // <-- ปิด IIFE ให้ครบ
+})(); // <-- ปิด IIFE ครบ
