@@ -73,58 +73,46 @@
   }
 
   // ── INJECTED & WC CONNECT ──────────────────────────────────
-  function getInjectedProvider() {
-    const {ethereum, web3} = window;
-    if (ethereum) {
-      if (Array.isArray(ethereum.providers)) {
-        return ethereum.providers.find(p=>p.isMetaMask) || ethereum.providers[0];
-      }
-      return ethereum;
-    }
-    if (web3 && web3.currentProvider) return web3.currentProvider;
-    return null;
+async function connectInjected() {
+  const injected = getInjectedProvider();
+  if (!injected) {
+    return alert('No injected wallet found!');
   }
+  try {
+    if (injected.request) await injected.request({ method: 'eth_requestAccounts' });
+    else await injected.enable();
 
-  async function connectInjected() {
-    const injected = getInjectedProvider();
-    if (!injected) {
-      return alert('No injected wallet found!');
-    }
-    try {
-      if (injected.request) await injected.request({method:'eth_requestAccounts'});
-      else await injected.enable();
+    const ethersLib   = window.ethers;
+    // ใช้ BrowserProvider แทน Web3Provider
+    const ethProvider = new ethersLib.BrowserProvider(injected);
 
-      const ethersLib   = window.ethers;
-      // ใช้ UMD แท้ ๆ
-      const ethProvider = new ethersLib.Web3Provider(injected, 'any');
-
-      await switchToTestnet(ethProvider);
-      finalizeConnect(ethProvider);
-    } catch (e) {
-      console.error('Injected connect failed', e);
-      alert('Connect failed: '+e.message);
-    }
+    await switchToTestnet(ethProvider);
+    finalizeConnect(ethProvider);
+  } catch (e) {
+    console.error('Injected connect failed', e);
+    alert('Connect failed: ' + e.message);
   }
+}
 
-  async function connectWalletConnect() {
-    try {
-      const wc = new window.WalletConnectProvider.default({
-        rpc:{[CHAIN_ID]:RPC_URL},
-        chainId:CHAIN_ID
-      });
-      await wc.enable();
+async function connectWalletConnect() {
+  try {
+    const wc = new window.WalletConnectProvider.default({
+      rpc: { [CHAIN_ID]: RPC_URL },
+      chainId: CHAIN_ID,
+    });
+    await wc.enable();
 
-      const ethersLib   = window.ethers;
-      // ใช้ UMD แท้ ๆ
-      const ethProvider = new ethersLib.Web3Provider(wc, 'any');
+    const ethersLib   = window.ethers;
+    // ใช้ BrowserProvider แทน Web3Provider
+    const ethProvider = new ethersLib.BrowserProvider(wc);
 
-      await switchToTestnet(ethProvider);
-      finalizeConnect(ethProvider);
-    } catch (e) {
-      console.error('WC connect failed', e);
-      alert('WC failed: '+e.message);
-    }
+    await switchToTestnet(ethProvider);
+    finalizeConnect(ethProvider);
+  } catch (e) {
+    console.error('WC connect failed', e);
+    alert('WC failed: ' + e.message);
   }
+}
 
   // ── AFTER CONNECT ──────────────────────────────────────────
   async function finalizeConnect(ethProvider) {
