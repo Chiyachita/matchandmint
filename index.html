@@ -2,17 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Match &amp; Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Inject the NFT.Storage key so the browser can pin directly -->
-  <script>
-    // Netlify will replace {{PUBLIC_NFT_STORAGE_KEY}} with your actual key at build time
-    window.NFT_STORAGE_KEY = "{{PUBLIC_NFT_STORAGE_KEY}}";
-    console.log("🔑 NFT_STORAGE_KEY is:", window.NFT_STORAGE_KEY ? "✅ set" : "❌ missing");
-  </script>
-
+  <!-- 1) Hard‐code your NFT.Storage key for now -->
+  <script src="config.js"></script>
 </head>
 <body>
   <div class="container">
@@ -38,7 +33,7 @@
     </div>
   </div>
 
-  <!-- WalletConnect if needed -->
+  <!-- WalletConnect (optional) -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   <!-- ethers.js -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
