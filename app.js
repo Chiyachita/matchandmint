@@ -86,40 +86,45 @@
     return null;
   }
 
-  async function connectInjected() {
-    const injected = getInjectedProvider();
-    if (!injected) {
-      return alert('No injected wallet found!');
-    }
-    try {
-      if (injected.request) await injected.request({method:'eth_requestAccounts'});
-      else await injected.enable();
+async function connectInjected() {
+  const injected = getInjectedProvider();
+  if (!injected) return alert('No injected wallet found!');
 
-      const ethersLib   = window.ethers;
-     const ethProvider = new ethersLib.Web3Provider(injected, 'any');
-      await switchToTestnet(ethProvider);
-      finalizeConnect(ethProvider);
-    } catch (e) {
-      console.error('Injected connect failed', e);
-      alert('Connect failed: '+e.message);
-    }
-  }
+  try {
+    if (injected.request) await injected.request({ method: 'eth_requestAccounts' });
+    else await injected.enable();
 
-  async function connectWalletConnect() {
-    try {
-      const wc = new window.WalletConnectProvider.default({
-        rpc:{[CHAIN_ID]:RPC_URL}, chainId:CHAIN_ID
-      });
-      await wc.enable();
-      const ethersLib   = window.ethers;
-      const ethProvider = new ethersLib.providers.Web3Provider(wc, 'any');
-      await switchToTestnet(ethProvider);
-      finalizeConnect(ethProvider);
-    } catch (e) {
-      console.error('WC connect failed', e);
-      alert('WC failed: '+e.message);
-    }
+    const ethersLib   = window.ethers;
+    // <-- เปลี่ยนตรงนี้
+    const ethProvider = new ethersLib.Web3Provider(injected, 'any');
+
+    await switchToTestnet(ethProvider);
+    finalizeConnect(ethProvider);
+  } catch (e) {
+    console.error(e);
+    alert('Connect failed: ' + e.message);
   }
+}
+
+async function connectWalletConnect() {
+  try {
+    const wc = new window.WalletConnectProvider.default({
+      rpc: { [CHAIN_ID]: RPC_URL },
+      chainId: CHAIN_ID,
+    });
+    await wc.enable();
+
+    const ethersLib   = window.ethers;
+    // <-- เปลี่ยนตรงนี้
+    const ethProvider = new ethersLib.Web3Provider(wc, 'any');
+
+    await switchToTestnet(ethProvider);
+    finalizeConnect(ethProvider);
+  } catch (e) {
+    console.error(e);
+    alert('WC failed: ' + e.message);
+  }
+}
 
   // ── AFTER CONNECT ──────────────────────────────────────────
   async function finalizeConnect(ethProvider) {
