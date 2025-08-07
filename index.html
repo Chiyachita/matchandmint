@@ -6,20 +6,22 @@
   <title>Match & Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- ① Inject your NFT.Storage key here: -->
+  <!-- Inject the NFT.Storage key (set in Netlify as PUBLIC_NFT_STORAGE_KEY) -->
   <script>
-    // 🚨 Paste the full key you generated in NFT.Storage:
-    window.NFT_STORAGE_KEY = '04be0e42.406dcb3178d8478585acd3b2f22ddfdf';
-    console.log('🔑 NFT_STORAGE_KEY length:', window.NFT_STORAGE_KEY.length);
+    // Netlify will replace import.meta.env.PUBLIC_NFT_STORAGE_KEY at build time
+    window.NFT_STORAGE_KEY = import.meta.env.PUBLIC_NFT_STORAGE_KEY;
+    console.log('🔑 NFT_STORAGE_KEY:', window.NFT_STORAGE_KEY);
   </script>
 </head>
 <body>
   <main>
     <h1>🧩 Match & Mint</h1>
 
+    <!-- Wallet connect status & button -->
     <div id="walletStatus">Not connected</div>
     <button id="connectInjectedBtn">Connect Wallet</button>
 
+    <!-- Game area: puzzle grid, preview, controls -->
     <div id="gameArea">
       <div id="puzzleGrid"></div>
       <img class="preview" src="preview.png" alt="Puzzle Preview" />
@@ -30,12 +32,12 @@
     </div>
   </main>
 
-  <!-- dependencies -->
+  <!-- Dependencies -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/ethers@6.8.4/dist/ethers.esm.min.js"></script>
   <script type="module" src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script type="module" src="https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js"></script>
 
-  <!-- your game logic -->
+  <!-- Your application logic -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
