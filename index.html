@@ -41,35 +41,21 @@
     </div>
   </div>
 
- <!-- UMD libraries (must load before app.js) -->
+  <!-- 1) WalletConnectProvider (for Web3Modal) -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <!-- 2) ethers.js -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <!-- 3) html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <!-- 1) WalletConnect, ethers, html2canvas (as you already had) -->
-  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <!-- 2) NFT.Storage UMD bundle -->
+  <!-- 4) Web3Modal (standalone IIFE) -->
+  <script src="https://unpkg.com/@web3modal/standalone@2.8.3/dist/index.iife.js"></script>
+  <!-- 5) NFT.Storage UMD bundle -->
   <script src="https://unpkg.com/nft.storage/dist/bundle.umd.min.js"></script>
-  <!-- 3) Expose your API Key -->
+  <!-- 6) Your API key -->
   <script>
     window.NFT_STORAGE_KEY = "04be0e42.406dcb3178d8478585acd3b2f22ddfdf";
   </script>
-  <!-- 4) **THEN** your app code -->
-<!-- ... -->
-<script src="https://unpkg.com/nft.storage/dist/bundle.umd.min.js"></script>
-<script>
-  // ← paste *your* NFT.Storage API key here:
-  window.NFT_STORAGE_KEY = '04be0e42.406dcb3178d8478585acd3b2f22ddfdf'
-</script>
-<script src="app.js"></script>
+  <!-- 7) Finally, your application code -->
+  <script src="app.js"></script>
 </body>
 </html>
-
-
-
-  <script src="app.js"></script>
-
-
