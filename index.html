@@ -46,12 +46,18 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- 1) NFT.Storage UMD client -->
-  <script src="https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.umd.min.js"></script>
-  <!-- 2) Expose your NFT.Storage JWT to the page -->
-  <script>
-    window.NFT_STORAGE_KEY = '04be0e42.406dcb3178d8478585acd3b2f22ddfdf';
-  </script>
+    <!-- 1) WalletConnect, ethers, html2canvas (as you already had) -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Your application logic -->
+  <!-- 2) NFT.Storage UMD bundle -->
+  <script src="https://unpkg.com/nft.storage/dist/bundle.umd.min.js"></script>
+  <!-- 3) Expose your API Key -->
+  <script>
+    window.NFT_STORAGE_KEY = "04be0e42.406dcb3178d8478585acd3b2f22ddfdf";
+  </script>
+  <!-- 4) **THEN** your app code -->
   <script src="app.js"></script>
+
+
