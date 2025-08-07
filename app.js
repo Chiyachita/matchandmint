@@ -464,6 +464,9 @@ const ASSETS_REPO   = 'match-and-mint-assets';
 const GITHUB_BRANCH = 'main';
 const IMAGES_PATH   = 'images';
 
+// NFT.Storage API key (get one free at https://nft.storage/)
+const NFT_STORAGE_KEY = process.env.NFT_STORAGE_KEY;
+
 // ── UI ELEMENTS ────────────────────────────────────────────
 const connectInjectedBtn      = document.getElementById('connectInjectedBtn');
 const connectWalletConnectBtn = document.getElementById('connectWalletConnectBtn');
