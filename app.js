@@ -3,7 +3,7 @@
 // ── PICK AN INJECTED WALLET PROVIDER ────────────────────────
 function getInjectedProvider() {
   const { ethereum } = window;
-  
+
   // If multiple wallets injected
   if (ethereum?.providers && Array.isArray(ethereum.providers)) {
     // Show wallet selection dialog
@@ -17,30 +17,30 @@ function getInjectedProvider() {
       else if (provider.isRabby) name = 'Rabby';
       else if (provider.isTrust) name = 'Trust Wallet';
       else if (provider.isOKExWallet) name = 'OKX Wallet';
-      
+
       return { provider, name, index };
     });
-    
+
     // Create selection prompt
     const walletOptions = availableWallets
       .map((w, i) => `${i + 1}: ${w.name}`)
       .join('\n');
-    
+
     const selection = prompt(
       `Multiple wallets detected. Choose one:\n${walletOptions}\n\nEnter number (or press Cancel for first available):`
     );
-    
+
     if (selection && !isNaN(selection)) {
       const index = parseInt(selection) - 1;
       if (index >= 0 && index < availableWallets.length) {
         return availableWallets[index].provider;
       }
     }
-    
+
     // Default to first provider if cancelled or invalid selection
     return ethereum.providers[0];
   }
-  
+
   // Single wallet or standard ethereum object
   return ethereum;
 }
@@ -527,21 +527,21 @@ async function connectInjected() {
     alert('No injected wallet found! Please install a wallet like MetaMask, Coinbase Wallet, or Backpack, then try again.');
     return;
   }
-  
+
   try {
     // Request account access
     const accounts = await injected.request({ method: 'eth_requestAccounts' });
     if (!accounts || accounts.length === 0) {
       throw new Error('No accounts available');
     }
-    
+
     const ethersProvider = new ethers.providers.Web3Provider(injected, 'any');
     await switchToMonad(ethersProvider);
     finishConnect(ethersProvider);
   } catch (err) {
     console.error('Injected connect failed', err);
     let errorMsg = 'Failed to connect wallet.';
-    
+
     if (err.code === 4001) {
       errorMsg = 'Connection rejected by user.';
     } else if (err.code === -32002) {
@@ -549,7 +549,7 @@ async function connectInjected() {
     } else if (err.message.includes('accounts')) {
       errorMsg = 'No accounts found. Please unlock your wallet.';
     }
-    
+
     alert(errorMsg);
   }
 }
@@ -662,24 +662,24 @@ startBtn.addEventListener('click', async () => {
   restartBtn.disabled   = true;
   if (!imageList.length) await loadImageList();
   const imageUrl = pickRandomImage();
-  
+
   // Set preview image first, then build puzzle
   previewImg.src = imageUrl;
-  
+
   // Build puzzle immediately, don't wait for image load
   buildPuzzle(imageUrl);
-  
+
   // Handle image loading for preview
   previewImg.onload = () => {
     console.log('Reference image loaded successfully');
   };
-  
+
   // Fallback if image fails to load
   previewImg.onerror = () => {
     console.warn('Failed to load reference image from GitHub, using fallback');
     previewImg.src = 'preview.png';
   };
-  
+
   startTimer();
 });
 
@@ -690,7 +690,7 @@ async function mintSnapshot() {
     if (!puzzleGrid.children.length) {
       throw new Error('No puzzle pieces to mint');
     }
-    
+
     console.log('Capturing puzzle grid:', puzzleGrid.offsetWidth, 'x', puzzleGrid.offsetHeight);
     const canvas = await html2canvas(puzzleGrid, {
       width: 420,
@@ -706,12 +706,14 @@ async function mintSnapshot() {
     const blob = new Blob([byteArray], { type: 'image/png' });
 
     // 3) Upload to NFT.Storage directly
-    const NFT_STORAGE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDJCNjdEMEVhMDc3NUY5ODdFMTU3ODA1MmE5YTZBMzI2QjFiMjQ2MzgiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMjk2MjA5NDUxNCwibmFtZSI6Im1hdGNoYW5kbWludCJ9.0qfyTbHWHLCrVHOO8Z-vSs8w-DZ-9vMCMj4nFZqHtQg';
-    
+    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === '0') {
+      throw new Error('Please update NFT_STORAGE_KEY with your valid API key from https://nft.storage/');
+    }
+
     // Upload image
     const imageFormData = new FormData();
     imageFormData.append('file', blob, 'puzzle.png');
-    
+
     const imageResponse = await fetch('https://api.nft.storage/upload', {
       method: 'POST',
       headers: {
@@ -719,7 +721,7 @@ async function mintSnapshot() {
       },
       body: imageFormData
     });
-    
+
     if (!imageResponse.ok) {
       const errorText = await imageResponse.text();
       console.error('Image upload error:', errorText);
@@ -753,7 +755,7 @@ async function mintSnapshot() {
     const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
     const metadataFormData = new FormData();
     metadataFormData.append('file', metadataBlob, 'metadata.json');
-    
+
     const metadataResponse = await fetch('https://api.nft.storage/upload', {
       method: 'POST',
       headers: {
@@ -761,7 +763,7 @@ async function mintSnapshot() {
       },
       body: metadataFormData
     });
-    
+
     if (!metadataResponse.ok) {
       const errorText = await metadataResponse.text();
       console.error('Metadata upload error:', errorText);
