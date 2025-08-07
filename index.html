@@ -2,42 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Match & Mint Puzzle</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🧩 Match & Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Inject the NFT.Storage key (set in Netlify as PUBLIC_NFT_STORAGE_KEY) -->
+  <!-- 1) Inject PUBLIC_NFT_STORAGE_KEY from Netlify into window -->
   <script>
-    // Netlify will replace import.meta.env.PUBLIC_NFT_STORAGE_KEY at build time
+    // Netlify will replace this at build time
     window.NFT_STORAGE_KEY = import.meta.env.PUBLIC_NFT_STORAGE_KEY;
     console.log('🔑 NFT_STORAGE_KEY:', window.NFT_STORAGE_KEY);
   </script>
 </head>
+
 <body>
   <main>
-    <h1>🧩 Match & Mint</h1>
+    <h1>Match &amp; Mint</h1>
 
-    <!-- Wallet connect status & button -->
+    <!-- 2) Two connect buttons -->
     <div id="walletStatus">Not connected</div>
-    <button id="connectInjectedBtn">Connect Wallet</button>
+    <button id="connectInjectedBtn">🔌 Connect Injected Wallet</button>
+    <button id="connectWalletConnectBtn">📱 Connect via WalletConnect</button>
 
-    <!-- Game area: puzzle grid, preview, controls -->
+    <!-- 3) Game controls -->
     <div id="gameArea">
       <div id="puzzleGrid"></div>
       <img class="preview" src="preview.png" alt="Puzzle Preview" />
       <div id="timeLeft">⏱ Time Left: 45s</div>
-      <button id="startBtn" disabled>Start Game</button>
-      <button id="mintBtn" disabled>Mint NFT</button>
-      <button id="restartBtn" disabled>Restart</button>
+      <button id="startBtn" disabled>🎮 Start Game</button>
+      <button id="mintBtn" disabled>💎 Mint NFT</button>
+      <button id="restartBtn" disabled>🔄 Restart</button>
     </div>
   </main>
 
-  <!-- Dependencies -->
+  <!-- 4) Load dependencies -->
+  <!-- Ethers.js core -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/ethers@6.8.4/dist/ethers.esm.min.js"></script>
+  <!-- WalletConnect provider (for any mobile/EVM wallet) -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <!-- html2canvas to snapshot the grid -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- NFT.Storage client -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js"></script>
 
-  <!-- Your application logic -->
+  <!-- 5) Your app logic -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
