@@ -2,25 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Match & Mint Puzzle</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Match &amp; Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Ethers.js from CDN -->
+
+  <!-- Ethers.js UMD -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+  <!-- html2canvas for snapshots -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- WalletConnect v1 UMD -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 </head>
 <body>
-  <button id="connectBtn">🔌 Connect Wallet</button>
-  <div id="walletStatus"></div>
+  <header>
+    <button id="connectInjectedBtn">🔌 Connect Wallet</button>
+    <button id="connectWalletConnectBtn">📱 WalletConnect</button>
+    <span id="walletStatus">Not connected</span>
+  </header>
 
-  <div id="controls">
-    <button id="startBtn" disabled>🎮 Start Game</button>
-    <button id="mintBtn" disabled>💎 Mint NFT</button>
-    <button id="restartBtn" disabled>🔄 Restart</button>
-    <span id="timeLeft">⏱ Time Left: 45s</span>
-  </div>
+  <main>
+    <section id="howTo">
+      <h2>📝 How to Play</h2>
+      <ol>
+        <li>Connect & switch to Monad Testnet (10143).</li>
+        <li>Click “Start Game” to shuffle a puzzle.</li>
+        <li>Rearrange pieces before the timer hits zero.</li>
+        <li>Mint anytime with “Mint NFT.”</li>
+        <li>When time’s up, you’ll be prompted to mint your arrangement.</li>
+      </ol>
+    </section>
 
-  <div id="puzzleGrid"></div>
-  <img id="preview" alt="Puzzle Preview" />
+    <div id="controls">
+      <button id="startBtn" disabled>🎮 Start Game</button>
+      <button id="mintBtn"  disabled>💎 Mint NFT</button>
+      <button id="restartBtn" disabled>🔄 Restart</button>
+      <span id="timeLeft">⏱ Time Left: 45s</span>
+    </div>
 
-  <script src="app.js" type="module"></script>
+    <div id="puzzleGrid" class="grid"></div>
+    <div id="previewContainer">
+      <img id="preview" class="preview" src="preview.png" alt="Puzzle Preview" />
+    </div>
+  </main>
+
+  <!-- your application logic -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
