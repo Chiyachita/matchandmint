@@ -706,7 +706,7 @@ async function mintSnapshot() {
     const blob = new Blob([byteArray], { type: 'image/png' });
 
     // 3) Upload to NFT.Storage directly
-    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === 'YOUR_NFT_STORAGE_API_KEY_HERE') {
+    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === '04be0e42.406dcb3178d8478585acd3b2f22ddfdf') {
       throw new Error('Please update NFT_STORAGE_KEY with your valid API key from https://nft.storage/');
     }
 
