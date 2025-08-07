@@ -1,3 +1,5 @@
+// app.js
+
 // ── CONFIG ────────────────────────────────────────────────
 const IMAGE_FILES = [
   "puzzle1.svg","puzzle2.svg","puzzle3.svg","puzzle4.svg",
@@ -52,24 +54,27 @@ btnConnect.onclick = async () => {
     let eth = window.ethereum;
     if (!eth) throw new Error('No injected wallet found');
     if (Array.isArray(eth.providers)) {
-      eth = eth.providers.find(p=>p.isMetaMask) || eth.providers[0];
+      eth = eth.providers.find(p => p.isMetaMask) || eth.providers[0];
       console.log('→ picked provider:', eth.isMetaMask ? 'MetaMask' : eth);
     }
-    await eth.request({ method:'eth_requestAccounts' });
-    provider = new ethers.providers.Web3Provider(eth,'any');
+    await eth.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.providers.Web3Provider(eth, 'any');
+
     const net = await provider.getNetwork();
-    console.log('Chain:', net.chainId);
+    console.log('Chain ID:', net.chainId);
     if (net.chainId !== CHAIN_ID) {
-      await provider.send('wallet_switchEthereumChain',[{ chainId:CHAIN_ID_HEX }]);
+      await provider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
     }
+
     signer   = provider.getSigner();
     contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
+
     const addr = await signer.getAddress();
     walletStatus.textContent = `Connected: ${addr.slice(0,6)}…${addr.slice(-4)}`;
     btnStart.disabled = false;
     console.log('✅ Wallet connected:', addr);
   } catch (e) {
-    console.error(e);
+    console.error('🔌 connect error:', e);
     alert('Wallet connection failed:\n' + e.message);
   }
 };
@@ -85,7 +90,7 @@ function buildPuzzle(imgUrl) {
     const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
     Object.assign(div.style, {
       backgroundImage:   `url(${imgUrl})`,
-      backgroundSize:    `${COLS*100}px ${ROWS*100}px`,
+      backgroundSize:    `${COLS * 100}px ${ROWS * 100}px`,
       backgroundPosition:`-${x}px -${y}px`
     });
     div.draggable = true;
@@ -105,7 +110,7 @@ function onDrop(e) {
   const i1 = kids.indexOf(draggedPiece), i2 = kids.indexOf(e.target);
   puzzleGrid.insertBefore(
     draggedPiece,
-    i2>i1 ? e.target.nextSibling : e.target
+    i2 > i1 ? e.target.nextSibling : e.target
   );
 }
 
@@ -118,7 +123,7 @@ function startTimer() {
     timeLeftEl.textContent = --timeLeft;
     if (timeLeft <= 0) {
       clearInterval(timer);
-      alert('⏳ Time’s up! Mint or Restart.');
+      alert('⏳ Time’s up! You may Mint or Restart.');
       btnStart.disabled   = false;
       btnRestart.disabled = false;
     }
@@ -135,11 +140,11 @@ btnRestart.onclick = () => {
 
 // ── START GAME ────────────────────────────────────────────
 btnStart.onclick = () => {
-  btnStart.disabled    = true;
-  btnMint.disabled     = false;
-  btnRestart.disabled  = true;
-  const url = pickRandom();
-  buildPuzzle(url);
+  btnStart.disabled   = true;
+  btnMint.disabled    = false;
+  btnRestart.disabled = true;
+  const imageUrl = pickRandom();
+  buildPuzzle(imageUrl);
   startTimer();
 };
 
@@ -147,39 +152,53 @@ btnStart.onclick = () => {
 btnMint.onclick = async () => {
   try {
     console.log('📸 Capturing snapshot…');
-    const canvas = await html2canvas(puzzleGrid,{useCORS:true});
+    const canvas = await html2canvas(puzzleGrid, { useCORS: true });
     const dataUrl = canvas.toDataURL('image/png');
     const blob = await (await fetch(dataUrl)).blob();
 
-    const key = window.NFT_STORAGE_KEY;
-    if (!key) throw new Error('Missing PUBLIC_NFT_STORAGE_KEY');
+    // debug & sanitize key
+    const rawKey = window.NFT_STORAGE_KEY || '';
+    for (let i = 0; i < rawKey.length; i++) {
+      if (rawKey.charCodeAt(i) > 255) {
+        console.error('❗️ Non-ASCII char at', i, rawKey[i]);
+      }
+    }
+    const token = rawKey.trim();
+    if (token.length < 10) throw new Error('Invalid NFT_STORAGE_KEY');
+    const authHeader = `Bearer ${token}`;
+    console.log('📋 Auth header start:', authHeader.slice(0,20) + '…');
 
+    // pin snapshot
     console.log('📡 Pinning snapshot…');
     const form = new FormData();
     form.append('file', blob, 'snapshot.png');
-    const pin = await fetch('https://api.nft.storage/upload', {
+    const pinRes = await fetch('https://api.nft.storage/upload', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key}` },
+      headers: { Authorization: authHeader },
       body: form
     });
-    if (!pin.ok) throw new Error(`NFT.Storage returned ${pin.status}`);
-    const { value } = await pin.json();
+    if (!pinRes.ok) throw new Error(`NFT.Storage returned ${pinRes.status}`);
+    const { value } = await pinRes.json();
     console.log('✅ PNG CID:', value.cid);
 
     // build metadata inline
     const metadata = {
       name: 'Puzzle Snapshot',
-      description: 'Your custom 4×4 puzzle.',
+      description: 'Your custom 4×4 puzzle arrangement.',
       image: `ipfs://${value.cid}`,
-      properties: { files:[{uri:`ipfs://${value.cid}`,type:'image/png'}] }
+      properties: {
+        files: [{ uri: `ipfs://${value.cid}`, type: 'image/png' }]
+      }
     };
-    const uri = 'data:application/json,' + encodeURIComponent(JSON.stringify(metadata));
-    console.log('⛓️ Minting with metadata URI…');
-    await (await contract.mintNFT(await signer.getAddress(), uri)).wait();
+    const metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(metadata));
+    console.log('⛓️ Minting with URI:', metadataUri.slice(0,60) + '…');
 
+    // mint on-chain
+    const tx = await contract.mintNFT(await signer.getAddress(), metadataUri);
+    await tx.wait();
     alert('🎉 Mint successful!');
   } catch (err) {
-    console.error('🔴 Mint error', err);
-    alert('Mint failed:\n' + err.message);
+    console.error('🔴 Mint error:', err);
+    alert('Mint failed:\n' + (err.message || err));
   }
 };
