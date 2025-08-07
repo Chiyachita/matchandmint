@@ -71,7 +71,7 @@ const mintBtn                 = document.getElementById('mintBtn');
 const restartBtn              = document.getElementById('restartBtn');
 const timeLeftEl              = document.getElementById('timeLeft');
 const puzzleGrid              = document.getElementById('puzzleGrid');
-const previewImg              = document.querySelector('.preview img');
+const previewImg              = document.getElementById('previewImg');
 
 let provider, signer, contract;
 let imageList = [];
@@ -260,8 +260,24 @@ startBtn.addEventListener('click', async () => {
   restartBtn.disabled   = true;
   if (!imageList.length) await loadImageList();
   const imageUrl = pickRandomImage();
-  buildPuzzle(imageUrl);
+  
+  // Set preview image first, then build puzzle
   previewImg.src = imageUrl;
+  
+  // Build puzzle immediately, don't wait for image load
+  buildPuzzle(imageUrl);
+  
+  // Handle image loading for preview
+  previewImg.onload = () => {
+    console.log('Reference image loaded successfully');
+  };
+  
+  // Fallback if image fails to load
+  previewImg.onerror = () => {
+    console.warn('Failed to load reference image from GitHub, using fallback');
+    previewImg.src = 'preview.png';
+  };
+  
   startTimer();
 });
 
@@ -272,21 +288,74 @@ async function mintSnapshot() {
     const canvas   = await html2canvas(puzzleGrid);
     const snapshot = canvas.toDataURL('image/png');
 
-    // 2) upload to NFT.Storage via your Netlify function or direct client
-    const resp = await fetch('/.netlify/functions/nftstorage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ snapshot })
-    });
-    if (!resp.ok) throw new Error(`Storage fn returned ${resp.status}`);
-    const { metadataCid } = await resp.json();
+    // 2) Convert base64 to blob for NFT.Storage
+    const base64Data = snapshot.split(',')[1];
+    const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    const blob = new Blob([byteArray], { type: 'image/png' });
 
-    // 3) mint on-chain
+    // 3) Upload to NFT.Storage directly
+    const NFT_STORAGE_KEY = '64be0e42.406dcb3178d8478585acd3b2f22ddfdf';
+    
+    // Upload image
+    const imageFormData = new FormData();
+    imageFormData.append('file', blob, 'puzzle.png');
+    
+    const imageResponse = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NFT_STORAGE_KEY}`
+      },
+      body: imageFormData
+    });
+    
+    if (!imageResponse.ok) throw new Error(`Image upload failed: ${imageResponse.status}`);
+    const imageResult = await imageResponse.json();
+    const imageCid = imageResult.value.cid;
+
+    // 4) Create metadata
+    const metadata = {
+      name: "Match and Mint Puzzle",
+      description: "A puzzle NFT created by matching pieces in the Match and Mint game",
+      image: `https://ipfs.io/ipfs/${imageCid}`,
+      attributes: [
+        {
+          trait_type: "Game Type",
+          value: "Puzzle"
+        },
+        {
+          trait_type: "Difficulty",
+          value: "4x4 Grid"
+        },
+        {
+          trait_type: "Created",
+          value: new Date().toISOString()
+        }
+      ]
+    };
+
+    // Upload metadata
+    const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+    const metadataFormData = new FormData();
+    metadataFormData.append('file', metadataBlob, 'metadata.json');
+    
+    const metadataResponse = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NFT_STORAGE_KEY}`
+      },
+      body: metadataFormData
+    });
+    
+    if (!metadataResponse.ok) throw new Error(`Metadata upload failed: ${metadataResponse.status}`);
+    const metadataResult = await metadataResponse.json();
+    const metadataCid = metadataResult.value.cid;
+
+    // 5) mint on-chain
     const uri = `https://ipfs.io/ipfs/${metadataCid}`;
     const tx  = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
-    // 4) feedback
+    // 6) feedback
     previewImg.src      = snapshot;
     alert('🎉 Minted! Your NFT is live.');
     clearInterval(timerHandle);
@@ -302,3 +371,11 @@ async function mintSnapshot() {
 mintBtn.addEventListener('click', mintSnapshot);
 connectInjectedBtn.addEventListener('click', connectInjected);
 connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
+
+// Initialize preview image from GitHub on page load
+(async function initializePreview() {
+  await loadImageList();
+  if (imageList.length > 0) {
+    previewImg.src = pickRandomImage();
+  }
+})();
