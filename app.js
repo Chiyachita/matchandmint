@@ -1,10 +1,19 @@
 // app.js
 
-// ── HOOK BACKPACK (and similar) INTO window.ethereum ───────────
-// Some wallets (e.g. Backpack) inject as window.injected.ethereum
-// We alias it onto window.ethereum so our existing EIP-1193 code just works.
-if (window.injected?.ethereum && !window.ethereum) {
-  window.ethereum = window.injected.ethereum;
+// ── PICK AN INJECTED WALLET PROVIDER ────────────────────────
+function getInjectedProvider() {
+  const { ethereum } = window;
+  // If multiple wallets injected (Backpack, Coinbase, MetaMask, etc.)
+  if (ethereum?.providers && Array.isArray(ethereum.providers)) {
+    // Prefer MetaMask / Coinbase / Backpack, else take the first
+    return (
+      ethereum.providers.find(p =>
+        p.isMetaMask || p.isCoinbaseWallet || p.isBackpack
+      ) || ethereum.providers[0]
+    );
+  }
+  // Fallback to single injected provider
+  return ethereum;
 }
 
 // ── CHAIN CONFIG ──────────────────────────────────────────
@@ -57,6 +66,7 @@ async function loadImageList() {
     imageList = await res.json();
   } catch (e) {
     console.error('Could not load list.json', e);
+    alert('⚠️ Oops: Could not load asset list.');
     imageList = [];
   }
 }
@@ -79,15 +89,16 @@ async function switchToMonad(ethersProvider) {
   }
 }
 
-// ── CONNECT INJECTED WALLET ───────────────────────────────
+// ── CONNECT INJECTED WALLET ────────────────────────────────
 async function connectInjected() {
-  if (!window.ethereum) {
+  const injected = getInjectedProvider();
+  if (!injected) {
     alert('No injected wallet found! Try WalletConnect.');
     return;
   }
   try {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const ethersProvider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+    await injected.request({ method: 'eth_requestAccounts' });
+    const ethersProvider = new ethers.providers.Web3Provider(injected, 'any');
     await switchToMonad(ethersProvider);
     finishConnect(ethersProvider);
   } catch (err) {
@@ -123,16 +134,18 @@ async function finishConnect(ethersProvider) {
   walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
   startBtn.disabled = false;
 
-  provider.provider.on('accountsChanged', ([a]) => {
+  // Listen on the *raw* provider for account/chain changes
+  const raw = provider.provider;
+  raw.on('accountsChanged', ([a]) => {
     walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`;
   });
-  provider.provider.on('chainChanged', cid => {
+  raw.on('chainChanged', cid => {
     if (cid !== CHAIN_ID_HEX) window.location.reload();
   });
-  provider.provider.on('disconnect', () => window.location.reload());
+  raw.on('disconnect', () => window.location.reload());
 }
 
-// ── BUILD & DRAG-DROP PUZZLE ──────────────────────────────
+// ── BUILD & DRAG-DROP PUZZLE ───────────────────────────────
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
   const cells = [];
@@ -195,7 +208,7 @@ restartBtn.addEventListener('click', () => {
   restartBtn.disabled     = true;
 });
 
-// ── START GAME ────────────────────────────────────────────
+// ── START GAME ───────────────────────────────────────────
 startBtn.addEventListener('click', async () => {
   startBtn.disabled     = true;
   mintBtn.disabled      = false;
@@ -207,61 +220,34 @@ startBtn.addEventListener('click', async () => {
   startTimer();
 });
 
-// ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ────────────────
+// ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
 async function mintSnapshot() {
   try {
     // 1) snapshot
     const canvas   = await html2canvas(puzzleGrid);
     const snapshot = canvas.toDataURL('image/png');
 
-    // 2) pin to NFT.Storage
-    const key = process.env.PUBLIC_NFT_STORAGE_KEY;
-    if (!key) throw new Error('Missing PUBLIC_NFT_STORAGE_KEY');
-    const uploadResp = await fetch('https://api.nft.storage/upload', {
+    // 2) upload to NFT.Storage via your Netlify function or direct client
+    const resp = await fetch('/.netlify/functions/nftstorage', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'Authorization': `Bearer ${key}`
-      },
-      body: await (await fetch(snapshot)).arrayBuffer()
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot })
     });
-    if (!uploadResp.ok) throw new Error(`NFT.Storage returned ${uploadResp.status}`);
-    const { value: { cid, data } } = await uploadResp.json();
+    if (!resp.ok) throw new Error(`Storage fn returned ${resp.status}`);
+    const { metadataCid } = await resp.json();
 
-    // 3) assemble metadata JSON and on-chain URI
-    const metadata = {
-      name: `MatchAndMintPuzzle #${await contract.nextTokenId()}`,
-      description: 'Your puzzle snapshot.',
-      image: `ipfs://${cid}`,
-      properties: {
-        files: [{ uri: `ipfs://${cid}`, type: 'image/png' }]
-      }
-    };
-    const metaBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
-    const metaUpload = await fetch('https://api.nft.storage/upload', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`
-      },
-      body: metaBlob
-    });
-    if (!metaUpload.ok) throw new Error(`NFT.Storage returned ${metaUpload.status} on metadata`);
-    const { value: { cid: metaCid } } = await metaUpload.json();
-    const uri = `https://ipfs.io/ipfs/${metaCid}`;
-
-    // 4) mint on-chain
+    // 3) mint on-chain
+    const uri = `https://ipfs.io/ipfs/${metadataCid}`;
     const tx  = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
-    // 5) show preview & reset
+    // 4) feedback
     previewImg.src      = snapshot;
     alert('🎉 Minted! Your NFT is live.');
     clearInterval(timerHandle);
     mintBtn.disabled    = true;
     startBtn.disabled   = false;
     restartBtn.disabled = false;
-
   } catch (err) {
     console.error('Mint error:', err);
     alert('Mint failed: ' + err.message);
