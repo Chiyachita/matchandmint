@@ -1,3 +1,14 @@
+– // ── MULTI-BRAND INJECTED CONNECT ────────────────────────────
++ // ── HOOK BACKPACK INTO window.ethereum ───────────────────────
++ // Backpack (and some other EVM wallets) inject under window.injected.ethereum
++ if (window.injected?.ethereum && !window.ethereum) {
++  window.ethereum = window.injected.ethereum;
++ }
++
++ // ── MULTI-BRAND INJECTED CONNECT ────────────────────────────
+
+
+
 // app.js
 
 // ── CHAIN & CONTRACT CONFIG ────────────────────────────────
