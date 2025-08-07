@@ -1,148 +1,181 @@
-// ── CONFIG ────────────────────────────────────────────────────
-const CHAIN_ID     = 10143;
-const CHAIN_ID_HEX = '0x279F';
+// app.js
+import html2canvas from 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
 
-const GITHUB_OWNER  = 'YourUser';             // ← your GitHub username
-const ASSETS_REPO   = 'match-and-mint-assets';
-const GITHUB_BRANCH = 'main';
-const LIST_URL      = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
-const IMAGES_BASE   = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/images`;
+const CHAIN_ID     = 10143
+const CHAIN_ID_HEX = '0x279F'
+const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5'
+const ABI = [
+  "function mintNFT(address to, string uri) external returns (uint256)",
+  "function ownerOf(uint256 tokenId) view returns (address)"
+]
 
-// ── UI ELEMENTS ───────────────────────────────────────────────
-const btnConnect = document.getElementById('btnConnect');
-const btnStart   = document.getElementById('btnStart');
-const btnMint    = document.getElementById('btnMint');
-const btnRestart = document.getElementById('btnRestart');
-const timerEl    = document.getElementById('timer');
-const grid       = document.getElementById('puzzleGrid');
-const preview    = document.getElementById('previewImg');
+// UI refs
+const connectBtn = document.getElementById('connectBtn')
+const walletStatus = document.getElementById('walletStatus')
+const startBtn = document.getElementById('startBtn')
+const mintBtn = document.getElementById('mintBtn')
+const restartBtn = document.getElementById('restartBtn')
+const timeLeftEl = document.getElementById('timeLeft')
+const puzzleGrid = document.getElementById('puzzleGrid')
+const previewImg = document.getElementById('preview')
 
-// ── STATE ─────────────────────────────────────────────────────
-let provider, signer, imageList = [];
-let timeLeft = 45, timerId = null, dragged = null;
-const ROWS = 4, COLS = 4;
+let provider, signer, contract
+let imageList = []
+let timerHandle, timeLeft = 45
+const ROWS = 4, COLS = 4
 
-// ── HELPERS ───────────────────────────────────────────────────
-function shuffle(a) {
-  for (let i=a.length-1; i>0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
-}
-
+// fetch list.json from your assets repo on jsDelivr
 async function loadImageList() {
-  const res = await fetch(LIST_URL);
-  imageList = await res.json().catch(_=>[]);
+  const res = await fetch('https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets@main/list.json')
+  imageList = res.ok ? await res.json() : []
 }
 
 function pickRandomImage() {
-  if (!imageList.length) return `${IMAGES_BASE}/preview.png`;
-  const fn = imageList[Math.floor(Math.random()*imageList.length)];
-  return `${IMAGES_BASE}/${fn}`;
+  if (!imageList.length) return 'preview.png'
+  const f = imageList[Math.floor(Math.random() * imageList.length)]
+  return `https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets@main/images/${f}`
+}
+
+function shuffle(arr) { /* Fisher–Yates */ 
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1))
+    [arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+}
+
+// build puzzle pieces
+function buildPuzzle(url) {
+  puzzleGrid.innerHTML = ''
+  const cells = []
+  for (let i = 0; i < ROWS*COLS; i++) {
+    const cell = document.createElement('div')
+    cell.className = 'cell'
+    cell.dataset.index = i
+    const x = (i%COLS)*100, y = Math.floor(i/COLS)*100
+    Object.assign(cell.style, {
+      backgroundImage: `url(${url})`,
+      backgroundSize: `${COLS*100}px ${ROWS*100}px`,
+      backgroundPosition: `-${x}px -${y}px`
+    })
+    cell.draggable = true
+    cell.addEventListener('dragstart', e=> dragged = e.target)
+    cell.addEventListener('dragover', e=> e.preventDefault())
+    cell.addEventListener('drop', onDrop)
+    cells.push(cell)
+  }
+  shuffle(cells)
+  cells.forEach(c=> puzzleGrid.appendChild(c))
+}
+
+let dragged = null
+function onDrop(e) {
+  e.preventDefault()
+  if (!dragged) return
+  const kids = Array.from(puzzleGrid.children)
+  const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target)
+  if (i1>-1 && i2>-1) {
+    puzzleGrid.insertBefore(dragged, i2>i1 ? e.target.nextSibling : e.target)
+  }
 }
 
 function isSolved() {
-  return [...grid.children].every((c,i)=>+c.dataset.index===i);
+  return Array.from(puzzleGrid.children)
+    .every((c, i)=> +c.dataset.index === i)
 }
 
-// ── CONNECT ───────────────────────────────────────────────────
-async function connect() {
-  if (!window.ethereum) {
-    alert('No injected wallet found!');
-    return;
-  }
-  await window.ethereum.request({ method:'eth_requestAccounts' });
-  provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-  const net = await provider.getNetwork();
-  if (net.chainId !== CHAIN_ID) {
-    await provider.send('wallet_switchEthereumChain',[{chainId:CHAIN_ID_HEX}]);
-  }
-  signer = provider.getSigner();
-  btnConnect.textContent = '✅ Connected';
-  btnStart.disabled = false;
-}
-
-// ── PUZZLE SETUP ─────────────────────────────────────────────
-function buildPuzzle(imgUrl) {
-  grid.innerHTML = '';
-  const cells = [];
-  for (let i=0; i<ROWS*COLS; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    cell.dataset.index = i;
-    const x = (i%COLS)*100, y = Math.floor(i/COLS)*100;
-    Object.assign(cell.style, {
-      backgroundImage:`url(${imgUrl})`,
-      backgroundPosition:`-${x}px -${y}px`
-    });
-    cell.draggable = true;
-    cell.addEventListener('dragstart', e=>dragged=e.target);
-    cell.addEventListener('dragover', e=>e.preventDefault());
-    cell.addEventListener('drop', onDrop);
-    cells.push(cell);
-  }
-  shuffle(cells);
-  cells.forEach(c=>grid.append(c));
-}
-
-// swap on drop
-function onDrop(e) {
-  e.preventDefault();
-  if (!dragged) return;
-  const kids = [...grid.children];
-  const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target);
-  if (i1>=0 && i2>=0) {
-    grid.insertBefore(dragged, i2>i1? e.target.nextSibling : e.target);
-  }
-}
-
-// ── TIMER & BUTTON LOGIC ────────────────────────────────────
+// timing
 function startTimer() {
-  clearInterval(timerId);
-  timeLeft = 45;
-  timerEl.textContent = `⏱ Time Left: ${timeLeft}s`;
-  timerId = setInterval(()=>{
-    timerEl.textContent = `⏱ Time Left: ${--timeLeft}s`;
+  clearInterval(timerHandle)
+  timeLeft = 45
+  timeLeftEl.textContent = `⏱ Time Left: ${timeLeft}s`
+  timerHandle = setInterval(()=>{
+    timeLeft--
+    timeLeftEl.textContent = `⏱ Time Left: ${timeLeft}s`
     if (timeLeft<=0) {
-      clearInterval(timerId);
+      clearInterval(timerHandle)
       alert(
         isSolved()
-          ? '⏰ Time’s up—but you nailed it! Mint your perfect masterpiece 🌟'
-          : '⏳ Time’s up! This is your masterpiece—feel free to mint or Restart.'
-      );
-      btnStart.disabled = false;
-      btnRestart.disabled = false;
-      btnMint.disabled = false;
+          ? '⏰ Done — perfect! Mint your masterpiece now.'
+          : '⏳ Time’s up! Mint what you have or restart.'
+      )
+      mintBtn.disabled = false
+      restartBtn.disabled = false
     }
-  },1000);
+  },1000)
 }
 
-// ── EVENT BINDINGS ───────────────────────────────────────────
-btnConnect.addEventListener('click', connect);
+// wallet
+async function switchToChain(p) {
+  const { chainId } = await p.getNetwork()
+  if (chainId !== CHAIN_ID) {
+    await p.send('wallet_switchEthereumChain',[{ chainId: CHAIN_ID_HEX }])
+  }
+}
 
-btnStart.addEventListener('click', async()=>{
-  btnStart.disabled = true;
-  btnMint.disabled  = false;
-  btnRestart.disabled = true;
+async function connectWallet() {
+  if (!window.ethereum) {
+    return alert('No injected wallet found')
+  }
+  await window.ethereum.request({ method: 'eth_requestAccounts' })
+  const p = new ethers.providers.Web3Provider(window.ethereum, 'any')
+  await switchToChain(p)
+  provider = p
+  signer   = p.getSigner()
+  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer)
+  const addr = await signer.getAddress()
+  walletStatus.textContent = `Connected: ${addr.slice(0,6)}…${addr.slice(-4)}`
+  startBtn.disabled = false
+}
 
-  if (!imageList.length) await loadImageList();
-  const img = pickRandomImage();
-  buildPuzzle(img);
-  preview.src = img;
-  startTimer();
-});
+connectBtn.onclick = connectWallet
 
-btnRestart.addEventListener('click', ()=>{
-  clearInterval(timerId);
-  grid.innerHTML = '';
-  timerEl.textContent = '⏱ Time Left: 45s';
-  btnStart.disabled = false;
-  btnMint.disabled  = true;
-  btnRestart.disabled = true;
-});
+// game controls
+startBtn.onclick = async () => {
+  startBtn.disabled = true
+  mintBtn.disabled = false
+  restartBtn.disabled = true
+  if (!imageList.length) await loadImageList()
+  const img = pickRandomImage()
+  buildPuzzle(img)
+  previewImg.src = img
+  startTimer()
+}
 
-// ── (PLACEHOLDER) MINT HANDLER ──────────────────────────────
-btnMint.addEventListener('click', ()=>{
-  // ← hook your NFT minting here (Pinata / NFT.Storage + on-chain)
-  alert('✨ Mint code goes here! ✨');
-});
+restartBtn.onclick = () => {
+  clearInterval(timerHandle)
+  puzzleGrid.innerHTML = ''
+  timeLeftEl.textContent = `⏱ Time Left: 45s`
+  startBtn.disabled = false
+  mintBtn.disabled = true
+  restartBtn.disabled = true
+}
+
+// mint
+mintBtn.onclick = async () => {
+  try {
+    // snapshot grid
+    const canvas = await html2canvas(puzzleGrid)
+    const dataUrl = canvas.toDataURL('image/png')
+
+    // upload via our Netlify function
+    const res = await fetch('/.netlify/functions/upload', {
+      method: 'POST',
+      body: JSON.stringify({ snapshot: dataUrl })
+    })
+    const { cid, error } = await res.json()
+    if (!cid) throw new Error(error||'Upload failed')
+
+    const metadataURL = `https://ipfs.io/ipfs/${cid}`
+    const tx = await contract.mintNFT(await signer.getAddress(), metadataURL)
+    await tx.wait()
+
+    alert('🎉 Minted — check it out onchain!')
+    clearInterval(timerHandle)
+    mintBtn.disabled = true
+    restartBtn.disabled = false
+    startBtn.disabled = false
+  } catch (e) {
+    console.error(e)
+    alert('Mint failed: '+e.message)
+  }
+}
