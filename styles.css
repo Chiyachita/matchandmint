@@ -1,146 +1,50 @@
-/* styles.css */
-
-/* ── VARIABLES ───────────────────────────────────────────── */
-:root {
-  --bg: #1e1a2b;
-  --fg: #e0dfe7;
-  --accent: #8a5af8;
-  --cell-size: 100px;
-  --gap: 6px;
-}
-
-/* ── GLOBAL RESET ─────────────────────────────────────────── */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-/* ── BASE STYLES ─────────────────────────────────────────── */
 body {
-  background-color: var(--bg);
-  color: var(--fg);
-  font-family: system-ui, sans-serif;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.container {
-  max-width: 400px;
-  width: 100%;
-  padding: 16px;
+  background: #201C35;
+  color: #EEE;
+  font-family: sans-serif;
   text-align: center;
+  padding: 1rem;
 }
+h1 { font-size: 2rem; }
 
-h1 {
-  margin-bottom: 16px;
-  font-size: 1.5rem;
+#gameArea {
+  display: inline-block;
+  margin-top: 1rem;
 }
-
-/* ── HOW TO PLAY PANEL ───────────────────────────────────── */
-.how-to-play {
-  background: rgba(138, 90, 248, 0.1);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
-  text-align: left;
-}
-
-.how-to-play h2 {
-  margin-bottom: 8px;
-  font-size: 1.1rem;
-}
-
-.how-to-play ol {
-  padding-left: 1.2em;
-  color: var(--fg);
-}
-
-.how-to-play li {
-  margin-bottom: 6px;
-  line-height: 1.3;
-}
-
-/* ── CONTROLS ────────────────────────────────────────────── */
-.controls {
-  margin-bottom: 12px;
-}
-
-button {
-  background-color: var(--accent);
-  border: none;
-  color: #fff;
-  padding: 8px 12px;
-  margin: 0 4px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-button:disabled {
-  background-color: #555;
-  cursor: not-allowed;
-}
-
-button:not(:disabled):hover {
-  background-color: #a278f8;
-}
-
-#walletStatus {
-  font-size: 0.9rem;
-  margin-left: 8px;
-}
-
-p {
-  margin: 12px 0;
-  font-size: 1rem;
-}
-
-/* ── PUZZLE GRID ─────────────────────────────────────────── */
-.grid {
+#puzzleGrid {
   display: grid;
-  grid-template-columns: repeat(4, var(--cell-size));
-  grid-template-rows:    repeat(4, var(--cell-size));
-  gap: var(--gap);
-  justify-content: center;
-  margin: 0 auto 16px;
-  user-select: none;
+  grid-template-columns: repeat(4, 100px);
+  grid-template-rows:    repeat(4, 100px);
+  gap: 4px;
+  margin-bottom: 1rem;
 }
-
 .cell {
-  width: var(--cell-size);
-  height: var(--cell-size);
-  background-color: #2a2540;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
+  width: 100px; height:100px;
+  background: #403865 no-repeat center;
   border-radius: 4px;
   cursor: grab;
 }
-
-.cell:active {
-  cursor: grabbing;
-}
-
-/* ── REFERENCE PREVIEW ───────────────────────────────────── */
 .preview {
-  margin-top: 8px;
-  border: 2px solid var(--accent);
-  border-radius: 8px;
-  padding: 4px;
-  width: calc(var(--cell-size) * 2 + var(--gap));
-  height: calc(var(--cell-size) * 2 + var(--gap));
-  margin-left: auto;
-  margin-right: auto;
-  overflow: hidden;
+  width: 200px; height:200px;
+  border: 2px solid #8E6EFF;
+  margin-bottom: 1rem;
 }
 
-.preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+button {
+  background: #8E6EFF;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+#timeLeft {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
 }
