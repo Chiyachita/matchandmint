@@ -43,13 +43,13 @@
     </main>
   </div>
 
-  <!-- ethers.js v5 -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5/dist/ethers.min.js"></script>
+  <!-- ethers.js v5 (UMD build) -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <!-- html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <!-- WalletConnect v1 -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-  <!-- Your application logic -->
+  <!-- Your application logic (must be module so you can 'import.meta.env') -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
