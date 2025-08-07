@@ -2,35 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
   <title>Match & Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
-    <button id="connectInjectedBtn">Connect Wallet</button>
-    <span id="walletStatus">Not connected</span>
-  </header>
+  <div class="container">
+    <header>
+      <h1>Match & Mint Puzzle</h1>
+      <div class="wallet-controls">
+        <button id="connectInjectedBtn">🔌 Connect Wallet</button>
+        <button id="connectWalletConnectBtn">📱 WalletConnect</button>
+        <span id="walletStatus">Not connected</span>
+      </div>
+    </header>
 
-  <main>
-    <div class="controls">
-      <button id="startBtn" disabled>🎮 Start Game</button>
-      <button id="mintBtn" disabled>💎 Mint NFT</button>
-      <button id="restartBtn" disabled>🔄 Restart</button>
-    </div>
+    <main>
+      <div class="game-area">
+        <div class="timer">
+          <span>⏳ Time Left:</span>
+          <span id="timeLeft">45</span>s
+        </div>
+        <div id="puzzleGrid" class="grid"></div>
+        <div class="preview-box">
+          <img
+            class="preview"
+            src="preview.png"
+            alt="Your snapshot will appear here"
+          />
+        </div>
+      </div>
+      <div class="controls">
+        <button id="startBtn" disabled>🎮 Start Game</button>
+        <button id="mintBtn" disabled>💎 Mint NFT</button>
+        <button id="restartBtn" disabled>🔄 Restart</button>
+      </div>
+    </main>
+  </div>
 
-    <div id="timer">
-      ⏱️ Time Left: <span id="timeLeft">0</span>s
-    </div>
-
-    <div id="puzzleGrid" class="grid"></div>
-    <div class="preview">
-      <img src="preview.png" alt="Your Puzzle Preview" />
-    </div>
-  </main>
-
-  <!-- Ethers v6 UMD bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.4/dist/ethers.umd.min.js"></script>
+  <!-- ethers.js v5 -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5/dist/ethers.min.js"></script>
+  <!-- html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- WalletConnect v1 -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   <!-- Your application logic -->
-  <script type="module" src="app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
