@@ -284,9 +284,19 @@ startBtn.addEventListener('click', async () => {
 // ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
 async function mintSnapshot() {
   try {
-    // 1) snapshot
-    const canvas   = await html2canvas(puzzleGrid);
+    // 1) snapshot - ensure grid is visible and has content
+    if (!puzzleGrid.children.length) {
+      throw new Error('No puzzle pieces to mint');
+    }
+    
+    console.log('Capturing puzzle grid:', puzzleGrid.offsetWidth, 'x', puzzleGrid.offsetHeight);
+    const canvas = await html2canvas(puzzleGrid, {
+      width: 420,
+      height: 420,
+      backgroundColor: '#ffffff'
+    });
     const snapshot = canvas.toDataURL('image/png');
+    console.log('Canvas size:', canvas.width, 'x', canvas.height);
 
     // 2) Convert base64 to blob for NFT.Storage
     const base64Data = snapshot.split(',')[1];
@@ -294,7 +304,7 @@ async function mintSnapshot() {
     const blob = new Blob([byteArray], { type: 'image/png' });
 
     // 3) Upload to NFT.Storage directly
-    const NFT_STORAGE_KEY = '64be0e42.406dcb3178d8478585acd3b2f22ddfdf';
+    const NFT_STORAGE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDJCNjdEMEVhMDc3NUY5ODdFMTU3ODA1MmE5YTZBMzI2QjFiMjQ2MzgiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMjk2MjA5NDUxNCwibmFtZSI6Im1hdGNoYW5kbWludCJ9.0qfyTbHWHLCrVHOO8Z-vSs8w-DZ-9vMCMj4nFZqHtQg';
     
     // Upload image
     const imageFormData = new FormData();
@@ -308,7 +318,11 @@ async function mintSnapshot() {
       body: imageFormData
     });
     
-    if (!imageResponse.ok) throw new Error(`Image upload failed: ${imageResponse.status}`);
+    if (!imageResponse.ok) {
+      const errorText = await imageResponse.text();
+      console.error('Image upload error:', errorText);
+      throw new Error(`Image upload failed: ${imageResponse.status} - ${errorText}`);
+    }
     const imageResult = await imageResponse.json();
     const imageCid = imageResult.value.cid;
 
@@ -346,7 +360,11 @@ async function mintSnapshot() {
       body: metadataFormData
     });
     
-    if (!metadataResponse.ok) throw new Error(`Metadata upload failed: ${metadataResponse.status}`);
+    if (!metadataResponse.ok) {
+      const errorText = await metadataResponse.text();
+      console.error('Metadata upload error:', errorText);
+      throw new Error(`Metadata upload failed: ${metadataResponse.status} - ${errorText}`);
+    }
     const metadataResult = await metadataResponse.json();
     const metadataCid = metadataResult.value.cid;
 
