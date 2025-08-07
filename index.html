@@ -1,38 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Match &amp; Mint Puzzle</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css"/>
 
-  <!-- ── INLINE YOUR NFT.STORAGE KEY ─────────────────────────── -->
-  <script>
-    // 🚨 Paste your full NFT.Storage key here, no ellipses:
-    window.NFT_STORAGE_KEY = '6a59a363.70aebce1e531482a9822b21828115ca0';
-    console.log(
-      '🔑 NFT_STORAGE_KEY (length:',
-      window.NFT_STORAGE_KEY.length + ')',
-      window.NFT_STORAGE_KEY
-    );
+  <!-- Web3.Storage client & your token -->
+  <script type="module">
+    import { Web3Storage } from 'https://cdn.jsdelivr.net/npm/web3.storage/dist/bundle.esm.min.js';
+    // 🚨 Paste your Web3.Storage token here (no smart quotes):
+    window.W3S_TOKEN = 'YOUR_WEB3_STORAGE_TOKEN_HERE';
+    window.makeW3Client = () => new Web3Storage({ token: window.W3S_TOKEN });
+    console.log('📦 Web3.Storage token length:', window.W3S_TOKEN.length);
   </script>
 </head>
 <body>
   <div class="container">
     <h1>🧩 Match &amp; Mint Puzzle</h1>
 
-    <!-- ── How to Play ─────────────────────────────────────── -->
     <div class="how-to-play">
       <h2>📝 How to Play</h2>
       <ol>
-        <li>Click <strong>Connect Wallet</strong> and switch to <strong>Monad Testnet</strong> (Chain ID 10143).</li>
-        <li>Press <strong>Start Game</strong> to shuffle a random puzzle.</li>
-        <li>Drag and drop pieces into place before the timer hits 0.</li>
-        <li>You can hit <strong>Mint NFT</strong> any time while the clock runs—or once time’s up.</li>
+        <li>Connect your wallet (Monad Testnet 10143).</li>
+        <li>Start Game → shuffle a random 4×4 puzzle.</li>
+        <li>Drag/drop pieces before the timer hits 0.</li>
+        <li>Hit “Mint NFT” any time while clock runs—or after time’s up.</li>
       </ol>
     </div>
 
-    <!-- ── Controls ──────────────────────────────────────────── -->
     <div class="controls">
       <button id="connectInjectedBtn">🔌 Connect Wallet</button>
       <span id="walletStatus"></span>
@@ -45,21 +41,19 @@
 
     <p>⏲️ Time Left: <span id="timeLeft">45</span>s</p>
 
-    <!-- ── Puzzle Grid ───────────────────────────────────────── -->
     <div id="puzzleGrid" class="grid"></div>
 
-    <!-- ── Reference Preview ──────────────────────────────────── -->
     <div class="preview">
-      <img id="referenceImg" src="preview.png" alt="Reference Puzzle" />
+      <img id="referenceImg" src="preview.png" alt="Reference Puzzle"/>
     </div>
   </div>
 
-  <!-- ── External Libraries ─────────────────────────────────── -->
+  <!-- WalletConnect (optional) + ethers + html2canvas -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- ── Your App Logic ────────────────────────────────────── -->
+  <!-- Your app logic -->
   <script src="app.js" defer></script>
 </body>
 </html>
