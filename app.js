@@ -464,9 +464,6 @@ const ASSETS_REPO   = 'match-and-mint-assets';
 const GITHUB_BRANCH = 'main';
 const IMAGES_PATH   = 'images';
 
-// NFT.Storage API key (get one free at https://nft.storage/)
-const NFT_STORAGE_KEY = process.env.NFT_STORAGE_KEY;
-
 // ── UI ELEMENTS ────────────────────────────────────────────
 const connectInjectedBtn      = document.getElementById('connectInjectedBtn');
 const connectWalletConnectBtn = document.getElementById('connectWalletConnectBtn');
@@ -709,7 +706,7 @@ async function mintSnapshot() {
     const blob = new Blob([byteArray], { type: 'image/png' });
 
     // 3) Upload to NFT.Storage directly
-    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === '0') {
+    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === 'YOUR_NFT_STORAGE_API_KEY_HERE') {
       throw new Error('Please update NFT_STORAGE_KEY with your valid API key from https://nft.storage/');
     }
 
