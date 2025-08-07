@@ -194,37 +194,41 @@ btnStart.addEventListener('click', async ()=>{
   startTimer();
 });
 
-// ─── MINT VIA NFT.Storage SDK & ON-CHAIN ───────────────────
-btnMint.addEventListener('click', async ()=>{
+btnMint.addEventListener('click', async () => {
   try {
-    // snapshot
+    // 1) snapshot to blob
     const canvas = await html2canvas(puzzleGrid);
-    const blob   = await new Promise(r=>canvas.toBlob(r,'image/png'));
+    const blob   = await new Promise(r => canvas.toBlob(r, 'image/png'));
 
-    // store image+meta
+    // 2) pin image + metadata via NFT.Storage SDK
     const client = new NFTStorage({ token: NFT_STORAGE_KEY });
     const meta   = await client.store({
       name: `MatchAndMintPuzzle #${Date.now()}`,
       description: 'Puzzle snapshot on Monad Testnet',
-      image: new File([blob], 'snapshot.png', {type:'image/png'})
+      image: new File([blob], 'snapshot.png', { type: 'image/png' })
     });
 
-    // mint
-    const uri = meta.url.replace('ipfs://','https://ipfs.io/ipfs/');
-    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
+    // 3) build a gateway URI from the ipfs:// cid
+    const uri = meta.url.replace('ipfs://', 'https://ipfs.io/ipfs/');
+
+    // 4) mint on-chain
+    const tx = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
-    previewImg.src = canvas.toDataURL();
-    alert('🎉 Minted! NFT is live.');
+    // 5) feedback & reset UI
+    previewImg.src      = canvas.toDataURL();
+    alert('🎉 Minted! Your NFT is live.');
     clearInterval(timerHandle);
     btnMint.disabled    = true;
     btnStart.disabled   = false;
     btnRestart.disabled = false;
+
   } catch (err) {
     console.error(err);
-    alert('Mint failed: '+err.message);
+    alert('Mint failed: ' + err.message);
   }
 });
+
 
 // ─── HOOKUP BUTTONS & INITIAL PREVIEW ──────────────────────
 btnInjected.addEventListener('click', connectInjected);
