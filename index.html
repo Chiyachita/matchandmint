@@ -6,30 +6,37 @@
   <title>Match &amp; Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Load config before app logic -->
-  <script src="config.js"></script>
-  <script src="app.js" defer></script>
+  <!-- ── INLINE YOUR NFT.STORAGE KEY ─────────────────────────── -->
+  <script>
+    // 🚨 Paste your full NFT.Storage key here, no ellipses:
+    window.NFT_STORAGE_KEY = '6a59a363.70aebce1e531482a9822b21828115ca0';
+    console.log(
+      '🔑 NFT_STORAGE_KEY (length:',
+      window.NFT_STORAGE_KEY.length + ')',
+      window.NFT_STORAGE_KEY
+    );
+  </script>
 </head>
 <body>
   <div class="container">
     <h1>🧩 Match &amp; Mint Puzzle</h1>
 
-    <!-- ← Add this block for How to Play -->
+    <!-- ── How to Play ─────────────────────────────────────── -->
     <div class="how-to-play">
       <h2>📝 How to Play</h2>
       <ol>
         <li>Click <strong>Connect Wallet</strong> and switch to <strong>Monad Testnet</strong> (Chain ID 10143).</li>
         <li>Press <strong>Start Game</strong> to shuffle a random puzzle.</li>
-        <li>Drag and drop the pieces to reassemble it before the timer hits 0.</li>
+        <li>Drag and drop pieces into place before the timer hits 0.</li>
         <li>You can hit <strong>Mint NFT</strong> any time while the clock runs—or once time’s up.</li>
       </ol>
     </div>
 
+    <!-- ── Controls ──────────────────────────────────────────── -->
     <div class="controls">
       <button id="connectInjectedBtn">🔌 Connect Wallet</button>
       <span id="walletStatus"></span>
     </div>
-
     <div class="controls">
       <button id="startBtn" disabled>🎮 Start Game</button>
       <button id="mintBtn" disabled>💎 Mint NFT</button>
@@ -38,16 +45,21 @@
 
     <p>⏲️ Time Left: <span id="timeLeft">45</span>s</p>
 
+    <!-- ── Puzzle Grid ───────────────────────────────────────── -->
     <div id="puzzleGrid" class="grid"></div>
 
+    <!-- ── Reference Preview ──────────────────────────────────── -->
     <div class="preview">
       <img id="referenceImg" src="preview.png" alt="Reference Puzzle" />
     </div>
   </div>
 
-  <!-- externals -->
+  <!-- ── External Libraries ─────────────────────────────────── -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- ── Your App Logic ────────────────────────────────────── -->
+  <script src="app.js" defer></script>
 </body>
 </html>
