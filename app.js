@@ -1,4 +1,6 @@
 // app.js
+// ← Add this at the very top:
+const NFT_STORAGE_KEY = '04be0e42.406dcb3178d8478585acd3b2f22ddfdf';
 
 // ── PICK AN INJECTED WALLET PROVIDER ────────────────────────
 function getInjectedProvider() {
