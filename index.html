@@ -4,40 +4,33 @@
   <meta charset="UTF-8" />
   <title>Match & Mint Puzzle</title>
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- ethers v5 UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <!-- html2canvas -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <!-- WalletConnect -->
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
-
-  <!-- Put your NFT.Storage API key here -->
-  <script>
-    window.NFT_STORAGE_KEY = '04be0e42.406dcb3178d8478585acd3b2f22ddfdf';
-  </script>
 </head>
-
 <body>
-  <div class="controls">
+  <header>
     <button id="connectInjectedBtn">Connect Wallet</button>
-    <button id="connectWalletConnectBtn">WC Connect</button>
     <span id="walletStatus">Not connected</span>
-  </div>
+  </header>
 
-  <div class="game">
-    <button id="startBtn" disabled>🎮 Start Game</button>
-    <button id="mintBtn" disabled>💎 Mint NFT</button>
-    <button id="restartBtn" disabled>↻ Restart</button>
-    <div>Time Left: <span id="timeLeft">45</span>s</div>
+  <main>
+    <div class="controls">
+      <button id="startBtn" disabled>🎮 Start Game</button>
+      <button id="mintBtn" disabled>💎 Mint NFT</button>
+      <button id="restartBtn" disabled>🔄 Restart</button>
+    </div>
+
+    <div id="timer">
+      ⏱️ Time Left: <span id="timeLeft">0</span>s
+    </div>
 
     <div id="puzzleGrid" class="grid"></div>
     <div class="preview">
-      <img src="preview.png" alt="Your puzzle snapshot" />
+      <img src="preview.png" alt="Your Puzzle Preview" />
     </div>
-  </div>
+  </main>
 
-  <!-- your app logic -->
-  <script src="app.js" type="module"></script>
+  <!-- Ethers v6 UMD bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.4/dist/ethers.umd.min.js"></script>
+  <!-- Your application logic -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
