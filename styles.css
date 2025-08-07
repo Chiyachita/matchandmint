@@ -1,50 +1,123 @@
+/* ───────────────────────────────────────────────────────────
+   GLOBAL RESET & FONTS
+──────────────────────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 body {
-  background: #201C35;
-  color: #EEE;
-  font-family: sans-serif;
-  text-align: center;
-  padding: 1rem;
+  background: #1e0f3c;
+  color: #fff;
+  font-family: 'Helvetica Neue', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
 }
-h1 { font-size: 2rem; }
 
-#gameArea {
-  display: inline-block;
-  margin-top: 1rem;
+/* ───────────────────────────────────────────────────────────
+   CONTROLS BAR
+──────────────────────────────────────────────────────────── */
+.controls {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
-#puzzleGrid {
+
+.controls button {
+  background: #6633ff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.controls button:disabled {
+  background: #433177;
+  cursor: default;
+}
+.controls button:hover:not(:disabled) {
+  background: #864eff;
+}
+
+#walletStatus {
+  font-size: 0.9rem;
+  margin-left: 8px;
+}
+
+/* ───────────────────────────────────────────────────────────
+   GAME AREA
+──────────────────────────────────────────────────────────── */
+.game {
+  text-align: center;
+  max-width: 480px;
+  width: 100%;
+}
+
+.game button {
+  margin: 5px;
+  background: #8f4ffe;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.game button:disabled {
+  background: #45306f;
+  cursor: default;
+}
+.game button:hover:not(:disabled) {
+  background: #a66eff;
+}
+
+/* timer text */
+#timeLeft {
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+/* ───────────────────────────────────────────────────────────
+   PUZZLE GRID
+──────────────────────────────────────────────────────────── */
+.grid {
   display: grid;
   grid-template-columns: repeat(4, 100px);
-  grid-template-rows:    repeat(4, 100px);
+  grid-template-rows: repeat(4, 100px);
   gap: 4px;
-  margin-bottom: 1rem;
+  margin: 20px auto;
+  width: max-content;
 }
+
 .cell {
-  width: 100px; height:100px;
-  background: #403865 no-repeat center;
+  width: 100px;
+  height: 100px;
+  background-color: #2a1a4e;
   border-radius: 4px;
+  background-repeat: no-repeat;
   cursor: grab;
 }
+
+/* ───────────────────────────────────────────────────────────
+   PREVIEW BOX
+──────────────────────────────────────────────────────────── */
 .preview {
-  width: 200px; height:200px;
-  border: 2px solid #8E6EFF;
-  margin-bottom: 1rem;
+  width: 416px;  /* 4 * 100px + 3*4px gap */
+  height: 416px;
+  border: 2px dashed #6644ff;
+  border-radius: 8px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-button {
-  background: #8E6EFF;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  margin: 0.25rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-button:disabled {
-  background: #555;
-  cursor: not-allowed;
-}
-
-#timeLeft {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+.preview img {
+  max-width: 100%;
+  max-height: 100%;
 }
