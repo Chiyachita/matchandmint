@@ -1,59 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Match &amp; Mint Puzzle</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <title>Match & Mint Puzzle</title>
+  <link rel="stylesheet" href="styles.css" />
 
-  <!-- Web3.Storage client & your token -->
-  <script type="module">
-    import { Web3Storage } from 'https://cdn.jsdelivr.net/npm/web3.storage/dist/bundle.esm.min.js';
-    // 🚨 Paste your Web3.Storage token here (no smart quotes):
-    window.W3S_TOKEN = 'YOUR_WEB3_STORAGE_TOKEN_HERE';
-    window.makeW3Client = () => new Web3Storage({ token: window.W3S_TOKEN });
-    console.log('📦 Web3.Storage token length:', window.W3S_TOKEN.length);
+  <!-- ① Inject your NFT.Storage key here: -->
+  <script>
+    // 🚨 Paste the full key you generated in NFT.Storage:
+    window.NFT_STORAGE_KEY = '04be0e42.406dcb3178d8478585acd3b2f22ddfdf';
+    console.log('🔑 NFT_STORAGE_KEY length:', window.NFT_STORAGE_KEY.length);
   </script>
 </head>
 <body>
-  <div class="container">
-    <h1>🧩 Match &amp; Mint Puzzle</h1>
+  <main>
+    <h1>🧩 Match & Mint</h1>
 
-    <div class="how-to-play">
-      <h2>📝 How to Play</h2>
-      <ol>
-        <li>Connect your wallet (Monad Testnet 10143).</li>
-        <li>Start Game → shuffle a random 4×4 puzzle.</li>
-        <li>Drag/drop pieces before the timer hits 0.</li>
-        <li>Hit “Mint NFT” any time while clock runs—or after time’s up.</li>
-      </ol>
+    <div id="walletStatus">Not connected</div>
+    <button id="connectInjectedBtn">Connect Wallet</button>
+
+    <div id="gameArea">
+      <div id="puzzleGrid"></div>
+      <img class="preview" src="preview.png" alt="Puzzle Preview" />
+      <div id="timeLeft">⏱ Time Left: 45s</div>
+      <button id="startBtn" disabled>Start Game</button>
+      <button id="mintBtn" disabled>Mint NFT</button>
+      <button id="restartBtn" disabled>Restart</button>
     </div>
+  </main>
 
-    <div class="controls">
-      <button id="connectInjectedBtn">🔌 Connect Wallet</button>
-      <span id="walletStatus"></span>
-    </div>
-    <div class="controls">
-      <button id="startBtn" disabled>🎮 Start Game</button>
-      <button id="mintBtn" disabled>💎 Mint NFT</button>
-      <button id="restartBtn" disabled>🔄 Restart</button>
-    </div>
+  <!-- dependencies -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/ethers@6.8.4/dist/ethers.esm.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js"></script>
 
-    <p>⏲️ Time Left: <span id="timeLeft">45</span>s</p>
-
-    <div id="puzzleGrid" class="grid"></div>
-
-    <div class="preview">
-      <img id="referenceImg" src="preview.png" alt="Reference Puzzle"/>
-    </div>
-  </div>
-
-  <!-- WalletConnect (optional) + ethers + html2canvas -->
-  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <!-- Your app logic -->
-  <script src="app.js" defer></script>
+  <!-- your game logic -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
