@@ -245,4 +245,3 @@ connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
   await loadImageList();
   if (imageList.length > 0) previewImg.src = pickRandomImage();
 })();
-
