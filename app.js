@@ -689,71 +689,54 @@ startBtn.addEventListener('click', async () => {
 // ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
 async function mintSnapshot() {
   try {
-    // 1) snapshot - ensure grid is visible and has content
     if (!puzzleGrid.children.length) {
       throw new Error('No puzzle pieces to mint');
     }
 
-    console.log('Capturing puzzle grid:', puzzleGrid.offsetWidth, 'x', puzzleGrid.offsetHeight);
     const canvas = await html2canvas(puzzleGrid, {
       width: 420,
       height: 420,
       backgroundColor: '#ffffff'
     });
     const snapshot = canvas.toDataURL('image/png');
-    console.log('Canvas size:', canvas.width, 'x', canvas.height);
 
-    // 2) Convert base64 to blob for NFT.Storage
-    const base64Data = snapshot.split(',')[1];
-    const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-    const blob = new Blob([byteArray], { type: 'image/png' });
-
-    // 3) Upload to NFT.Storage directly
-    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === 'YOUR_NFT_STORAGE_API_KEY_HERE') {
-      throw new Error('Please update NFT_STORAGE_KEY with your valid API key from https://nft.storage/');
-    }
-
-    // Upload image
-    const imageFormData = new FormData();
-    imageFormData.append('file', blob, 'puzzle.png');
-
-    const imageResponse = await fetch('https://api.nft.storage/upload', {
+    // 🔐 Upload via Netlify function
+    const response = await fetch('/.netlify/functions/upload', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${NFT_STORAGE_KEY}`
-      },
-      body: imageFormData
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot })
     });
 
-    if (!imageResponse.ok) {
-      const errorText = await imageResponse.text();
-      console.error('Image upload error:', errorText);
-      throw new Error(`Image upload failed: ${imageResponse.status} - ${errorText}`);
+    const result = await response.json();
+    if (!response.ok || !result.cid) {
+      throw new Error(`Upload failed: ${result.error || 'No CID returned'}`);
     }
-    const imageResult = await imageResponse.json();
-    const imageCid = imageResult.value.cid;
 
-    // 4) Create metadata
     const metadata = {
       name: "Match and Mint Puzzle",
       description: "A puzzle NFT created by matching pieces in the Match and Mint game",
-      image: `https://ipfs.io/ipfs/${imageCid}`,
+      image: `https://gateway.pinata.cloud/ipfs/${result.cid}`,
       attributes: [
-        {
-          trait_type: "Game Type",
-          value: "Puzzle"
-        },
-        {
-          trait_type: "Difficulty",
-          value: "4x4 Grid"
-        },
-        {
-          trait_type: "Created",
-          value: new Date().toISOString()
-        }
+        { trait_type: "Game Type", value: "Puzzle" },
+        { trait_type: "Difficulty", value: "4x4 Grid" },
+        { trait_type: "Created", value: new Date().toISOString() }
       ]
     };
 
+    const tx = await contract.mintNFT(await signer.getAddress(), JSON.stringify(metadata));
+    await tx.wait();
+
+    previewImg.src = snapshot;
+    alert('🎉 Minted! Your NFT is live.');
+    clearInterval(timerHandle);
+    mintBtn.disabled = true;
+    startBtn.disabled = false;
+    restartBtn.disabled = false;
+  } catch (err) {
+    console.error('Mint error:', err);
+    alert('Mint failed: ' + err.message);
+  }
+}
     // Upload metadata
     const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
     const metadataFormData = new FormData();
