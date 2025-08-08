@@ -26,11 +26,11 @@ function getInjectedProvider() {
 
     // Create selection prompt
     const walletOptions = availableWallets
-      .map((w, i) => ${i + 1}: ${w.name})
+      .map((w, i) => `${i + 1}: ${w.name}`)
       .join('\n');
 
     const selection = prompt(
-      Multiple wallets detected. Choose one:\n${walletOptions}\n\nEnter number (or press Cancel for first available):
+      `Multiple wallets detected. Choose one:\n${walletOptions}\n\nEnter number (or press Cancel for first available):`
     );
 
     if (selection && !isNaN(selection)) {
@@ -493,7 +493,7 @@ function shuffle(arr) {
 }
 
 async function loadImageList() {
-  const url = https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json;
+  const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.status);
@@ -508,7 +508,7 @@ async function loadImageList() {
 function pickRandomImage() {
   if (!imageList.length) return 'preview.png';
   const file = imageList[Math.floor(Math.random() * imageList.length)];
-  return https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file};
+  return `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
 }
 
 function isPuzzleSolved() {
@@ -581,13 +581,13 @@ async function finishConnect(ethersProvider) {
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
   const addr = await signer.getAddress();
-  walletStatus.textContent = Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad);
+  walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
   startBtn.disabled = false;
 
   // Listen on the *raw* provider for account/chain changes
   const raw = provider.provider;
   raw.on('accountsChanged', ([a]) => {
-    walletStatus.textContent = Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad);
+    walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`;
   });
   raw.on('chainChanged', cid => {
     if (cid !== CHAIN_ID_HEX) window.location.reload();
@@ -605,9 +605,9 @@ function buildPuzzle(imageUrl) {
     cell.dataset.index = i;
     const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
-      backgroundImage: url(${imageUrl}),
-      backgroundSize: ${COLS*100}px ${ROWS*100}px,
-      backgroundPosition: -${x}px -${y}px
+      backgroundImage: `url(${imageUrl})`,
+      backgroundSize: `${COLS*100}px ${ROWS*100}px`,
+      backgroundPosition: `-${x}px -${y}px`
     });
     cell.draggable    = true;
     cell.addEventListener('dragstart', e => (dragged = e.target));
@@ -689,51 +689,71 @@ startBtn.addEventListener('click', async () => {
 // ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
 async function mintSnapshot() {
   try {
+    // 1) snapshot - ensure grid is visible and has content
     if (!puzzleGrid.children.length) {
       throw new Error('No puzzle pieces to mint');
     }
 
+    console.log('Capturing puzzle grid:', puzzleGrid.offsetWidth, 'x', puzzleGrid.offsetHeight);
     const canvas = await html2canvas(puzzleGrid, {
       width: 420,
       height: 420,
       backgroundColor: '#ffffff'
     });
     const snapshot = canvas.toDataURL('image/png');
+    console.log('Canvas size:', canvas.width, 'x', canvas.height);
 
-    // 🔐 Upload via Netlify function
-   const response = await fetch('/.netlify/functions/upload', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ imageBase64, metadata }),
-});
-const { cid } = await response.json();
-const uri = ipfs://${cid};
+    // 2) Convert base64 to blob for NFT.Storage
+    const base64Data = snapshot.split(',')[1];
+    const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    const blob = new Blob([byteArray], { type: 'image/png' });
 
+    // 3) Upload to NFT.Storage directly
+    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === 'YOUR_NFT_STORAGE_API_KEY_HERE') {
+      throw new Error('Please update NFT_STORAGE_KEY with your valid API key from https://nft.storage/');
+    }
+
+    // Upload image
+    const imageFormData = new FormData();
+    imageFormData.append('file', blob, 'puzzle.png');
+
+    const imageResponse = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NFT_STORAGE_KEY}`
+      },
+      body: imageFormData
+    });
+
+    if (!imageResponse.ok) {
+      const errorText = await imageResponse.text();
+      console.error('Image upload error:', errorText);
+      throw new Error(`Image upload failed: ${imageResponse.status} - ${errorText}`);
+    }
+    const imageResult = await imageResponse.json();
+    const imageCid = imageResult.value.cid;
+
+    // 4) Create metadata
     const metadata = {
       name: "Match and Mint Puzzle",
       description: "A puzzle NFT created by matching pieces in the Match and Mint game",
-      image: https://gateway.pinata.cloud/ipfs/${result.cid},
+      image: `https://ipfs.io/ipfs/${imageCid}`,
       attributes: [
-        { trait_type: "Game Type", value: "Puzzle" },
-        { trait_type: "Difficulty", value: "4x4 Grid" },
-        { trait_type: "Created", value: new Date().toISOString() }
+        {
+          trait_type: "Game Type",
+          value: "Puzzle"
+        },
+        {
+          trait_type: "Difficulty",
+          value: "4x4 Grid"
+        },
+        {
+          trait_type: "Created",
+          value: new Date().toISOString()
+        }
       ]
     };
 
-    const tx = await contract.mintNFT(await signer.getAddress(), JSON.stringify(metadata));
-    await tx.wait();
-
-    previewImg.src = snapshot;
-    alert('🎉 Minted! Your NFT is live.');
-    clearInterval(timerHandle);
-    mintBtn.disabled = true;
-    startBtn.disabled = false;
-    restartBtn.disabled = false;
-  } catch (err) {
-    console.error('Mint error:', err);
-    alert('Mint failed: ' + err.message);
-  }
-}
     // Upload metadata
     const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
     const metadataFormData = new FormData();
@@ -742,7 +762,7 @@ const uri = ipfs://${cid};
     const metadataResponse = await fetch('https://api.nft.storage/upload', {
       method: 'POST',
       headers: {
-        'Authorization': Bearer ${NFT_STORAGE_KEY}
+        'Authorization': `Bearer ${NFT_STORAGE_KEY}`
       },
       body: metadataFormData
     });
@@ -750,13 +770,13 @@ const uri = ipfs://${cid};
     if (!metadataResponse.ok) {
       const errorText = await metadataResponse.text();
       console.error('Metadata upload error:', errorText);
-      throw new Error(Metadata upload failed: ${metadataResponse.status} - ${errorText});
+      throw new Error(`Metadata upload failed: ${metadataResponse.status} - ${errorText}`);
     }
     const metadataResult = await metadataResponse.json();
     const metadataCid = metadataResult.value.cid;
 
     // 5) mint on-chain
-    const uri = https://ipfs.io/ipfs/${metadataCid};
+    const uri = `https://ipfs.io/ipfs/${metadataCid}`;
     const tx  = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
