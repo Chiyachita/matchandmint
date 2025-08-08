@@ -689,36 +689,29 @@ startBtn.addEventListener('click', async () => {
 // ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
 async function mintSnapshot() {
   try {
-    // Capture the puzzle as a PNG
-    const canvas = await html2canvas(puzzleGrid, { width: 420, height: 420, backgroundColor: '#ffffff' });
-    const snapshot = canvas.toDataURL('image/png');
+    // 1) snapshot - ensure grid is visible and has content
+    if (!puzzleGrid.children.length) {
+      throw new Error('No puzzle pieces to mint');
+    }
 
-    // Send the snapshot to your Netlify function
-    const resp = await fetch('/.netlify/functions/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ snapshot }),
+    console.log('Capturing puzzle grid:', puzzleGrid.offsetWidth, 'x', puzzleGrid.offsetHeight);
+    const canvas = await html2canvas(puzzleGrid, {
+      width: 420,
+      height: 420,
+      backgroundColor: '#ffffff'
     });
-    if (!resp.ok) throw new Error(await resp.text());
-    const { cid } = await resp.json();
+    const snapshot = canvas.toDataURL('image/png');
+    console.log('Canvas size:', canvas.width, 'x', canvas.height);
 
-    // Mint the NFT using the returned CID
-    const uri = `https://ipfs.io/ipfs/${cid}`;
-    const tx = await contract.mintNFT(await signer.getAddress(), uri);
-    await tx.wait();
+    // 2) Convert base64 to blob for NFT.Storage
+    const base64Data = snapshot.split(',')[1];
+    const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    const blob = new Blob([byteArray], { type: 'image/png' });
 
-    // Update UI as before
-    alert('🎉 Minted! Your NFT is live.');
-    clearInterval(timerHandle);
-    mintBtn.disabled = true;
-    startBtn.disabled = false;
-    restartBtn.disabled = false;
-  } catch (err) {
-    console.error('Mint error:', err);
-    alert('Mint failed: ' + err.message);
-  }
-}
-
+    // 3) Upload to NFT.Storage directly
+    if (!NFT_STORAGE_KEY || NFT_STORAGE_KEY === 'YOUR_NFT_STORAGE_API_KEY_HERE') {
+      throw new Error('Please update NFT_STORAGE_KEY with your valid API key from https://nft.storage/');
+    }
 
     // Upload image
     const imageFormData = new FormData();
