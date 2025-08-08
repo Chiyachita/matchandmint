@@ -686,7 +686,10 @@ startBtn.addEventListener('click', async () => {
   startTimer();
 });
 
-// ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
+// ✅ PATCHED mintSnapshot() for secure Pinata upload via Netlify function
+// Replaces NFT.Storage logic and hides JWT securely via env vars
+
+// Place this inside your existing app.js, replacing the old mintSnapshot()
 async function mintSnapshot() {
   try {
     if (!puzzleGrid.children.length) {
@@ -737,53 +740,4 @@ async function mintSnapshot() {
     alert('Mint failed: ' + err.message);
   }
 }
-    // Upload metadata
-    const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
-    const metadataFormData = new FormData();
-    metadataFormData.append('file', metadataBlob, 'metadata.json');
 
-    const metadataResponse = await fetch('https://api.nft.storage/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${NFT_STORAGE_KEY}`
-      },
-      body: metadataFormData
-    });
-
-    if (!metadataResponse.ok) {
-      const errorText = await metadataResponse.text();
-      console.error('Metadata upload error:', errorText);
-      throw new Error(`Metadata upload failed: ${metadataResponse.status} - ${errorText}`);
-    }
-    const metadataResult = await metadataResponse.json();
-    const metadataCid = metadataResult.value.cid;
-
-    // 5) mint on-chain
-    const uri = `https://ipfs.io/ipfs/${metadataCid}`;
-    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
-    await tx.wait();
-
-    // 6) feedback
-    previewImg.src      = snapshot;
-    alert('🎉 Minted! Your NFT is live.');
-    clearInterval(timerHandle);
-    mintBtn.disabled    = true;
-    startBtn.disabled   = false;
-    restartBtn.disabled = false;
-  } catch (err) {
-    console.error('Mint error:', err);
-    alert('Mint failed: ' + err.message);
-  }
-}
-
-mintBtn.addEventListener('click', mintSnapshot);
-connectInjectedBtn.addEventListener('click', connectInjected);
-connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
-
-// Initialize preview image from GitHub on page load
-(async function initializePreview() {
-  await loadImageList();
-  if (imageList.length > 0) {
-    previewImg.src = pickRandomImage();
-  }
-})();
