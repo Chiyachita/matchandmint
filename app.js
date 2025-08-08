@@ -1,12 +1,425 @@
-// app.js
+// ✅ Updated app.js with Pinata JWT upload using Netlify Function
 
-// ── CONFIG ───────────────────────────────────────────────
-const NFT_STORAGE_KEY = window.NFT_STORAGE_KEY;
-const CHAIN_ID     = 10143;
-const CHAIN_ID_HEX = '0x279F';
+// ── CONFIG ────────────────────────────────────────────
 const CONTRACT_ADDRESS = '0x259C1Da2586295881C18B733Cb738fe1151bD2e5';
+const CHAIN_ID = 10143;
+const CHAIN_ID_HEX = '0x279F';
 
-// ── DOM ELEMENTS ─────────────────────────────────────────
+const ABI = [
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "approved",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
+			}
+		],
+		"name": "ApprovalForAll",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "_fromTokenId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "_toTokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "BatchMetadataUpdate",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "_tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "MetadataUpdate",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			}
+		],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "safeTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "data",
+				"type": "bytes"
+			}
+		],
+		"name": "safeTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
+			}
+		],
+		"name": "setApprovalForAll",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "getApproved",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			}
+		],
+		"name": "isApprovedForAll",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nextTokenId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "ownerOf",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes4",
+				"name": "interfaceId",
+				"type": "bytes4"
+			}
+		],
+		"name": "supportsInterface",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "tokenURI",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
+
+
+// ── ASSETS CONFIG ─────────────────────────────────────
+const GITHUB_OWNER = 'Chiyachita';
+const ASSETS_REPO = 'match-and-mint-assets';
+const GITHUB_BRANCH = 'main';
+const IMAGES_PATH = 'images';
+
+// ── UI ELEMENTS ───────────────────────────────────────
 const connectInjectedBtn      = document.getElementById('connectInjectedBtn');
 const connectWalletConnectBtn = document.getElementById('connectWalletConnectBtn');
 const walletStatus            = document.getElementById('walletStatus');
@@ -23,36 +436,33 @@ let timerHandle, timeLeft = 45;
 let dragged = null;
 const ROWS = 4, COLS = 4;
 
-// ── HELPERS ───────────────────────────────────────────────
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+function getInjectedProvider() {
+  const { ethereum } = window;
+  if (ethereum?.providers && Array.isArray(ethereum.providers)) {
+    const availableWallets = ethereum.providers.map((provider, index) => {
+      let name = 'Unknown Wallet';
+      if (provider.isMetaMask) name = 'MetaMask';
+      else if (provider.isCoinbaseWallet) name = 'Coinbase Wallet';
+      else if (provider.isBackpack) name = 'Backpack';
+      else if (provider.isPhantom) name = 'Phantom';
+      else if (provider.isBraveWallet) name = 'Brave Wallet';
+      else if (provider.isRabby) name = 'Rabby';
+      else if (provider.isTrust) name = 'Trust Wallet';
+      else if (provider.isOKExWallet) name = 'OKX Wallet';
+      return { provider, name, index };
+    });
+
+    const walletOptions = availableWallets.map((w, i) => `${i + 1}: ${w.name}`).join('\n');
+    const selection = prompt(`Multiple wallets detected:\n${walletOptions}\n\nEnter number:`);
+    if (selection && !isNaN(selection)) {
+      const index = parseInt(selection) - 1;
+      if (index >= 0 && index < availableWallets.length) {
+        return availableWallets[index].provider;
+      }
+    }
+    return ethereum.providers[0];
   }
-}
-
-async function loadImageList() {
-  const url = `https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets@main/list.json`;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(res.status);
-    imageList = await res.json();
-  } catch (e) {
-    console.error('Could not load list.json', e);
-    alert('⚠️ Oops: Could not load asset list.');
-    imageList = [];
-  }
-}
-
-function pickRandomImage() {
-  if (!imageList.length) return 'preview.png';
-  const file = imageList[Math.floor(Math.random() * imageList.length)];
-  return `https://cdn.jsdelivr.net/gh/Chiyachita/match-and-mint-assets@main/images/${file}`;
-}
-
-function isPuzzleSolved() {
-  return Array.from(puzzleGrid.children)
-    .every((cell, idx) => parseInt(cell.dataset.index, 10) === idx);
+  return ethereum;
 }
 
 async function switchToMonad(ethersProvider) {
@@ -62,33 +472,18 @@ async function switchToMonad(ethersProvider) {
   }
 }
 
-function getInjectedProvider() {
-  const { ethereum } = window;
-  if (ethereum?.providers && Array.isArray(ethereum.providers)) {
-    const options = ethereum.providers.map((provider, index) => {
-      let name = provider.isMetaMask ? 'MetaMask' : 'Wallet';
-      return { provider, name, index };
-    });
-    const input = prompt(`Select wallet:\n${options.map((w, i) => `${i + 1}: ${w.name}`).join('\n')}`);
-    const idx = parseInt(input) - 1;
-    return options[idx]?.provider || ethereum.providers[0];
-  }
-  return ethereum;
-}
-
 async function connectInjected() {
   const injected = getInjectedProvider();
-  if (!injected) return alert('No wallet found.');
+  if (!injected) return alert('No injected wallet found!');
 
   try {
     const accounts = await injected.request({ method: 'eth_requestAccounts' });
-    if (!accounts.length) throw new Error('No accounts');
     const ethersProvider = new ethers.providers.Web3Provider(injected, 'any');
     await switchToMonad(ethersProvider);
     finishConnect(ethersProvider);
   } catch (err) {
-    console.error('Connect error', err);
-    alert('Wallet connection failed: ' + err.message);
+    console.error('Injected connect failed', err);
+    alert('Failed to connect wallet.');
   }
 }
 
@@ -103,8 +498,8 @@ async function connectWalletConnect() {
     await switchToMonad(ethersProvider);
     finishConnect(ethersProvider);
   } catch (err) {
-    console.error('WalletConnect error', err);
-    alert('WalletConnect failed.');
+    console.error('WalletConnect failed', err);
+    alert('Failed to connect via WalletConnect.');
   }
 }
 
@@ -112,13 +507,34 @@ async function finishConnect(ethersProvider) {
   provider = ethersProvider;
   signer   = provider.getSigner();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
   const addr = await signer.getAddress();
   walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
   startBtn.disabled = false;
-  const raw = provider.provider;
-  raw.on('accountsChanged', ([a]) => walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`);
-  raw.on('chainChanged', cid => { if (cid !== CHAIN_ID_HEX) location.reload(); });
-  raw.on('disconnect', () => location.reload());
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function pickRandomImage() {
+  if (!imageList.length) return 'preview.png';
+  const file = imageList[Math.floor(Math.random() * imageList.length)];
+  return `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
+}
+
+async function loadImageList() {
+  const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    imageList = await res.json();
+  } catch (e) {
+    alert('⚠️ Could not load asset list.');
+  }
 }
 
 function buildPuzzle(imageUrl) {
@@ -147,7 +563,7 @@ function buildPuzzle(imageUrl) {
 function onDrop(e) {
   e.preventDefault();
   if (!dragged) return;
-  const kids = [...puzzleGrid.children];
+  const kids = Array.from(puzzleGrid.children);
   const i1 = kids.indexOf(dragged), i2 = kids.indexOf(e.target);
   if (i1 > -1 && i2 > -1) {
     puzzleGrid.insertBefore(dragged, i2 > i1 ? e.target.nextSibling : e.target);
@@ -162,7 +578,7 @@ function startTimer() {
     timeLeftEl.textContent = --timeLeft;
     if (timeLeft <= 0) {
       clearInterval(timerHandle);
-      alert(isPuzzleSolved() ? '⏰ Time’s up—but you nailed it!' : '⏳ Time’s up! Mint or restart.');
+      alert('⏳ Time’s up! This is your masterpiece — mint it or restart.');
       startBtn.disabled = false;
       restartBtn.disabled = false;
     }
@@ -189,7 +605,7 @@ startBtn.addEventListener('click', async () => {
   startTimer();
 });
 
-// ── MINT NFT ───────────────────────────────────────────────
+// ── MINT SNAPSHOT via SERVERLESS FUNCTION ────────────────
 async function mintSnapshot() {
   try {
     if (!puzzleGrid.children.length) throw new Error('No puzzle to mint');
@@ -201,27 +617,17 @@ async function mintSnapshot() {
     });
 
     const snapshot = canvas.toDataURL('image/png');
-    const metadata = {
-      name: "Match and Mint Puzzle",
-      description: "A puzzle NFT created by matching pieces in the Match and Mint game",
-      image: "",
-      attributes: [
-        { trait_type: "Game Type", value: "Puzzle" },
-        { trait_type: "Grid", value: "4x4" },
-        { trait_type: "Created", value: new Date().toISOString() }
-      ]
-    };
+    const base64 = snapshot.split(',')[1];
 
     const res = await fetch('/.netlify/functions/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: snapshot, metadata })
+      body: JSON.stringify({ image: base64 })
     });
 
-    const { cid } = await res.json();
-    if (!cid) throw new Error('Upload failed');
+    const { uri } = await res.json();
+    if (!uri) throw new Error('Upload failed');
 
-    const uri = `ipfs://${cid}`;
     const tx = await contract.mintNFT(await signer.getAddress(), uri);
     await tx.wait();
 
@@ -232,7 +638,6 @@ async function mintSnapshot() {
     startBtn.disabled = false;
     restartBtn.disabled = false;
   } catch (err) {
-    console.error('Mint error', err);
     alert('Mint failed: ' + err.message);
   }
 }
@@ -241,7 +646,7 @@ mintBtn.addEventListener('click', mintSnapshot);
 connectInjectedBtn.addEventListener('click', connectInjected);
 connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
 
-(async function initializePreview() {
+(async function init() {
   await loadImageList();
-  if (imageList.length > 0) previewImg.src = pickRandomImage();
+  if (imageList.length) previewImg.src = pickRandomImage();
 })();
