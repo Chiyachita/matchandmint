@@ -26,11 +26,11 @@ function getInjectedProvider() {
 
     // Create selection prompt
     const walletOptions = availableWallets
-      .map((w, i) => `${i + 1}: ${w.name}`)
+      .map((w, i) => ${i + 1}: ${w.name})
       .join('\n');
 
     const selection = prompt(
-      `Multiple wallets detected. Choose one:\n${walletOptions}\n\nEnter number (or press Cancel for first available):`
+      Multiple wallets detected. Choose one:\n${walletOptions}\n\nEnter number (or press Cancel for first available):
     );
 
     if (selection && !isNaN(selection)) {
@@ -493,7 +493,7 @@ function shuffle(arr) {
 }
 
 async function loadImageList() {
-  const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
+  const url = https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json;
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.status);
@@ -508,7 +508,7 @@ async function loadImageList() {
 function pickRandomImage() {
   if (!imageList.length) return 'preview.png';
   const file = imageList[Math.floor(Math.random() * imageList.length)];
-  return `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
+  return https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file};
 }
 
 function isPuzzleSolved() {
@@ -581,13 +581,13 @@ async function finishConnect(ethersProvider) {
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
   const addr = await signer.getAddress();
-  walletStatus.textContent = `Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad)`;
+  walletStatus.textContent = Connected: ${addr.slice(0,6)}...${addr.slice(-4)} (Monad);
   startBtn.disabled = false;
 
   // Listen on the *raw* provider for account/chain changes
   const raw = provider.provider;
   raw.on('accountsChanged', ([a]) => {
-    walletStatus.textContent = `Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad)`;
+    walletStatus.textContent = Connected: ${a.slice(0,6)}...${a.slice(-4)} (Monad);
   });
   raw.on('chainChanged', cid => {
     if (cid !== CHAIN_ID_HEX) window.location.reload();
@@ -605,9 +605,9 @@ function buildPuzzle(imageUrl) {
     cell.dataset.index = i;
     const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
     Object.assign(cell.style, {
-      backgroundImage: `url(${imageUrl})`,
-      backgroundSize: `${COLS*100}px ${ROWS*100}px`,
-      backgroundPosition: `-${x}px -${y}px`
+      backgroundImage: url(${imageUrl}),
+      backgroundSize: ${COLS*100}px ${ROWS*100}px,
+      backgroundPosition: -${x}px -${y}px
     });
     cell.draggable    = true;
     cell.addEventListener('dragstart', e => (dragged = e.target));
@@ -686,10 +686,7 @@ startBtn.addEventListener('click', async () => {
   startTimer();
 });
 
-// ✅ PATCHED mintSnapshot() for secure Pinata upload via Netlify function
-// Replaces NFT.Storage logic and hides JWT securely via env vars
-
-// Place this inside your existing app.js, replacing the old mintSnapshot()
+// ── MINT SNAPSHOT → NFT.STORAGE → ON-CHAIN ─────────────────
 async function mintSnapshot() {
   try {
     if (!puzzleGrid.children.length) {
@@ -704,21 +701,18 @@ async function mintSnapshot() {
     const snapshot = canvas.toDataURL('image/png');
 
     // 🔐 Upload via Netlify function
-    const response = await fetch('/.netlify/functions/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ snapshot })
-    });
-
-    const result = await response.json();
-    if (!response.ok || !result.cid) {
-      throw new Error(`Upload failed: ${result.error || 'No CID returned'}`);
-    }
+   const response = await fetch('/.netlify/functions/upload', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ imageBase64, metadata }),
+});
+const { cid } = await response.json();
+const uri = ipfs://${cid};
 
     const metadata = {
       name: "Match and Mint Puzzle",
       description: "A puzzle NFT created by matching pieces in the Match and Mint game",
-      image: `https://gateway.pinata.cloud/ipfs/${result.cid}`,
+      image: https://gateway.pinata.cloud/ipfs/${result.cid},
       attributes: [
         { trait_type: "Game Type", value: "Puzzle" },
         { trait_type: "Difficulty", value: "4x4 Grid" },
@@ -740,4 +734,53 @@ async function mintSnapshot() {
     alert('Mint failed: ' + err.message);
   }
 }
+    // Upload metadata
+    const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+    const metadataFormData = new FormData();
+    metadataFormData.append('file', metadataBlob, 'metadata.json');
 
+    const metadataResponse = await fetch('https://api.nft.storage/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': Bearer ${NFT_STORAGE_KEY}
+      },
+      body: metadataFormData
+    });
+
+    if (!metadataResponse.ok) {
+      const errorText = await metadataResponse.text();
+      console.error('Metadata upload error:', errorText);
+      throw new Error(Metadata upload failed: ${metadataResponse.status} - ${errorText});
+    }
+    const metadataResult = await metadataResponse.json();
+    const metadataCid = metadataResult.value.cid;
+
+    // 5) mint on-chain
+    const uri = https://ipfs.io/ipfs/${metadataCid};
+    const tx  = await contract.mintNFT(await signer.getAddress(), uri);
+    await tx.wait();
+
+    // 6) feedback
+    previewImg.src      = snapshot;
+    alert('🎉 Minted! Your NFT is live.');
+    clearInterval(timerHandle);
+    mintBtn.disabled    = true;
+    startBtn.disabled   = false;
+    restartBtn.disabled = false;
+  } catch (err) {
+    console.error('Mint error:', err);
+    alert('Mint failed: ' + err.message);
+  }
+}
+
+mintBtn.addEventListener('click', mintSnapshot);
+connectInjectedBtn.addEventListener('click', connectInjected);
+connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
+
+// Initialize preview image from GitHub on page load
+(async function initializePreview() {
+  await loadImageList();
+  if (imageList.length > 0) {
+    previewImg.src = pickRandomImage();
+  }
+})();
