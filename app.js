@@ -1,7 +1,7 @@
 // app.js
 
 // tmp hard-code (not for prod!)
-const NFT_STORAGE_KEY = '655e58ee.5d9bc3833d6c4e1a9c6f067a80a58120'
+const NFT_STORAGE_KEY = window.NFT_STORAGE_KEY;
 
 // ── PICK AN INJECTED WALLET PROVIDER ────────────────────────
 function getInjectedProvider() {
