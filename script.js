@@ -662,11 +662,24 @@ async function mintSnapshot() {
     const snapshot = canvas.toDataURL('image/png');
     const base64 = snapshot.split(',')[1];
 
-    const res = await fetch('https://' + window.location.hostname + ':5000/api/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: snapshot })
-    });
+    // ✅ Netlify-compatible upload (same-origin to serverless function)
+const res = await fetch('/.netlify/functions/upload', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ image: snapshot })
+});
+
+const raw = await res.text();
+if (!res.ok) {
+  // ให้เห็น error จากฟังก์ชันชัด ๆ
+  throw new Error(`Upload failed [${res.status}]: ${raw}`);
+}
+
+let json;
+try { json = JSON.parse(raw); } catch (e) { throw new Error('Upload response not JSON: ' + raw); }
+const { uri } = json;
+if (!uri) throw new Error('No tokenURI from upload function');
+
 
     if (!res.ok) {
       const errorData = await res.json();
