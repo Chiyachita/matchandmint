@@ -288,19 +288,24 @@ function buildPuzzle(imageUrl) {
       backgroundPosition: `-${x}px -${y}px`
     });
 
-    // 🔧 NEW: steadier dragging (no bounce)
+    // ✅ Safari/WebKit-safe dragging (no bounce, drop fires)
     cell.draggable = true;
 
     cell.addEventListener('dragstart', (e) => {
       dragged = cell;
       cell.classList.add('dragging');
+
+      // Safari requires at least one data item to enable drop
+      e.dataTransfer.setData('text/plain', cell.dataset.index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.dropEffect = 'move';
+
       // tiny custom ghost to avoid layout jumps
       const ghost = document.createElement('div');
       ghost.style.width = '1px';
       ghost.style.height = '1px';
       document.body.appendChild(ghost);
       e.dataTransfer.setDragImage(ghost, 0, 0);
-      e.dataTransfer.effectAllowed = 'move';
       setTimeout(() => ghost.remove(), 0);
     });
 
@@ -309,7 +314,9 @@ function buildPuzzle(imageUrl) {
       cell.classList.remove('dragging');
     });
 
+    // must preventDefault on both events for WebKit
     cell.addEventListener('dragover', (e) => e.preventDefault());
+    cell.addEventListener('dragenter', (e) => e.preventDefault());
 
     cell.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -364,84 +371,4 @@ if (startBtn) {
     if (!imageList.length) await loadImageList();
     const imageUrl = pickRandomImage();
 
-    // 🔧 NEW: ensure image is CORS-ready before building puzzle
-    await preloadImage(imageUrl);
-
-    previewImg.src = imageUrl;
-    buildPuzzle(imageUrl);
-    startTimer();
-  });
-}
-
-// ── MINT SNAPSHOT via SERVER API ──────────────────────
-async function mintSnapshot() {
-  try {
-    if (!puzzleGrid.children.length) throw new Error('No puzzle to mint');
-
-    // 🔧 NEW: make sure the image is loaded before snapshot
-    const firstCell = puzzleGrid.querySelector('.cell');
-    const bg = firstCell && firstCell.style && firstCell.style.backgroundImage;
-    const match = bg && bg.match(/url\("(.*)"\)/);
-    const imgUrl = match && match[1];
-    if (imgUrl) await preloadImage(imgUrl);
-
-    const canvas = await html2canvas(puzzleGrid, {
-      width: 420,
-      height: 420,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      allowTaint: false,
-      imageTimeout: 0,
-      scale: 1,
-      logging: false
-    });
-
-    const snapshot = canvas.toDataURL('image/png');
-
-    // dev = localhost:3000, prod = same origin
-    const apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
-      : '';
-
-    const res = await fetch(`${apiBase}/api/upload`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: snapshot })
-    });
-
-    if (!res.ok) {
-      let msg = 'Upload failed';
-      try { const j = await res.json(); msg = j.error || msg; } catch {}
-      throw new Error(msg);
-    }
-
-    const upload = await res.json();
-    const metaUri = upload.uri;
-    if (!metaUri) throw new Error('No metadata URI returned');
-
-    mintBtn.disabled = true;
-    const tx = await contract.mintNFT(await signer.getAddress(), metaUri);
-    await tx.wait();
-
-    previewImg.src = snapshot;
-    alert('🎉 Minted successfully!');
-    clearInterval(timerHandle);
-    startBtn.disabled = false;
-    restartBtn.disabled = false;
-  } catch (err) {
-    alert('Mint failed: ' + (err?.message || err));
-  } finally {
-    mintBtn.disabled = false;
-  }
-}
-
-// ── WIRE UP BUTTONS ───────────────────────────────────
-if (mintBtn) mintBtn.addEventListener('click', mintSnapshot);
-if (connectInjectedBtn) connectInjectedBtn.addEventListener('click', connectInjected);
-if (connectWalletConnectBtn) connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
-
-// ── INIT ──────────────────────────────────────────────
-(async function init() {
-  await loadImageList();
-  if (imageList.length) previewImg.src = pickRandomImage();
-})();
+    // ensur
