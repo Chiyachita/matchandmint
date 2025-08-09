@@ -42,7 +42,11 @@ const ABI = [
     "inputs": [
       { "internalType": "address", "name": "to", "type": "address" },
       { "internalType": "string", "name": "uri", "type": "string" }
-    ], "name": "mintNFT", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function"
+    ],
+    "name": "mintNFT",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [
@@ -81,18 +85,25 @@ const ABI = [
   },
   {
     "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
-    "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function"
+    "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
-    "name": "getApproved", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function"
+    "name": "getApproved", "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
       { "internalType": "address", "name": "owner", "type": "address" },
       { "internalType": "address", "name": "operator", "type": "address" }
     ],
-    "name": "isApprovedForAll", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function"
+    "name": "isApprovedForAll",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
   },
   { "inputs": [], "name": "name", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
   { "inputs": [], "name": "nextTokenId", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
@@ -251,6 +262,17 @@ async function loadImageList() {
   }
 }
 
+// 🔧 NEW: preload ภาพแบบ CORS เพื่อกันรูปขาวเวลา snapshot
+async function preloadImage(url) {
+  await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve();
+    img.onerror = reject;
+    img.src = url + (url.includes('?') ? '&' : '?') + 'cachebust=' + Date.now();
+  });
+}
+
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
   const cells = [];
@@ -318,6 +340,10 @@ if (startBtn) {
     restartBtn.disabled = true;
     if (!imageList.length) await loadImageList();
     const imageUrl = pickRandomImage();
+
+    // 🔧 NEW: รอให้รูปโหลดแบบ CORS ก่อนสร้าง puzzle
+    await preloadImage(imageUrl);
+
     previewImg.src = imageUrl;
     buildPuzzle(imageUrl);
     startTimer();
@@ -329,10 +355,22 @@ async function mintSnapshot() {
   try {
     if (!puzzleGrid.children.length) throw new Error('No puzzle to mint');
 
+    // 🔧 NEW: กันเคสรูปยังไม่พร้อมก่อน snapshot
+    const firstCell = puzzleGrid.querySelector('.cell');
+    const bg = firstCell && firstCell.style && firstCell.style.backgroundImage;
+    const match = bg && bg.match(/url\("(.*)"\)/);
+    const imgUrl = match && match[1];
+    if (imgUrl) await preloadImage(imgUrl);
+
     const canvas = await html2canvas(puzzleGrid, {
       width: 420,
       height: 420,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      useCORS: true,       // สำคัญมาก
+      allowTaint: false,
+      imageTimeout: 0,
+      scale: 1,
+      logging: false
     });
 
     const snapshot = canvas.toDataURL('image/png');
@@ -358,17 +396,19 @@ async function mintSnapshot() {
     const metaUri = upload.uri;
     if (!metaUri) throw new Error('No metadata URI returned');
 
+    mintBtn.disabled = true;
     const tx = await contract.mintNFT(await signer.getAddress(), metaUri);
     await tx.wait();
 
     previewImg.src = snapshot;
     alert('🎉 Minted successfully!');
     clearInterval(timerHandle);
-    mintBtn.disabled = true;
     startBtn.disabled = false;
     restartBtn.disabled = false;
   } catch (err) {
     alert('Mint failed: ' + (err?.message || err));
+  } finally {
+    mintBtn.disabled = false;
   }
 }
 
