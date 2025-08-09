@@ -41,12 +41,51 @@
     </div>
   </div>
 
-  <!-- UMD libraries (must load before app.js) -->
-  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- UMD libraries -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 
   <!-- Your application logic -->
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
+
+  <!-- Safety net: ensure the Connect button always works -->
+  <script>
+    (function() {
+      function wireNow() {
+        var btn = document.getElementById('connectInjectedBtn');
+        if (!btn) return;
+
+        btn.disabled = false;
+
+        // remove any stale handlers
+        var clone = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clone, btn);
+
+        clone.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (typeof window.connectInjected === 'function') {
+            window.connectInjected();
+          } else {
+            console.warn('[connect] connectInjected not ready yet');
+          }
+        });
+      }
+
+      // try immediately (after defer scripts, DOM is parsed)
+      document.addEventListener('DOMContentLoaded', wireNow);
+
+      // last resort: if script.js defines connectInjected later, we still bind
+      var tries = 0;
+      var t = setInterval(function() {
+        tries++;
+        if (typeof window.connectInjected === 'function') {
+          wireNow();
+          clearInterval(t);
+        }
+        if (tries > 60) clearInterval(t); // 60 * 250ms ~ 15s max
+      }, 250);
+    })();
+  </script>
 </body>
 </html>
