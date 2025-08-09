@@ -1,5 +1,5 @@
 // Netlify Function: POST /api/upload
-// Env: PINATA_JWT (JWT from Pinata, starts with "eyJ...")
+// Env: PINATA_JWT (Pinata JWT starting with "eyJ...")
 // package.json deps: "node-fetch": "^2.6.7", "form-data": "^4.0.0"
 
 const fetch = require('node-fetch');
@@ -7,20 +7,14 @@ const FormData = require('form-data');
 
 exports.handler = async (event) => {
   try {
-    // --- CORS / preflight
-    if (event.httpMethod === 'OPTIONS') {
-      return resp(204, null);
-    }
-    if (event.httpMethod !== 'POST') {
-      return resp(405, { error: 'Method Not Allowed' });
-    }
+    // CORS / preflight
+    if (event.httpMethod === 'OPTIONS') return resp(204, null);
+    if (event.httpMethod !== 'POST') return resp(405, { error: 'Method Not Allowed' });
 
     const PINATA_JWT = process.env.PINATA_JWT;
-    if (!PINATA_JWT) {
-      return resp(500, { error: 'Missing PINATA_JWT env on Netlify' });
-    }
+    if (!PINATA_JWT) return resp(500, { error: 'Missing PINATA_JWT env on Netlify' });
 
-    // --- Parse body
+    // Parse body
     let body;
     try { body = JSON.parse(event.body || '{}'); }
     catch { return resp(400, { error: 'Invalid JSON body' }); }
@@ -30,15 +24,14 @@ exports.handler = async (event) => {
       return resp(400, { error: 'Invalid image data (expect data:image/png;base64,...)' });
     }
 
-    // --- 1) Upload PNG to IPFS via Pinata
+    // 1) Upload PNG
     const base64 = imageDataUrl.replace(/^data:image\/png;base64,/, '');
     const buffer = Buffer.from(base64, 'base64');
 
     const imgForm = new FormData();
-    // unchanged: upload the PNG
     imgForm.append('file', buffer, { filename: 'snapshot.png', contentType: 'image/png' });
-    // NEW: helpful metadata/options (CIDv1 is nice; name helps UX in Pinata)
-    imgForm.append('pinataMetadata', JSON.stringify({ name: `matchmint-snapshot-${Date.now()}` }));
+    // helpful metadata/options
+    imgForm.append('pinataMetadata', JSON.stringify({ name: `matchmint-snapshot-${Date.now()}.png` }));
     imgForm.append('pinataOptions', JSON.stringify({ cidVersion: 1 }));
 
     const imgRes = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
@@ -55,14 +48,13 @@ exports.handler = async (event) => {
     const imageCid = imgJson?.IpfsHash;
     if (!imageCid) return resp(500, { error: 'Pinata did not return image CID' });
 
-    // Gateway URL for the image (explorers can render this directly)
     const imageGateway = `https://gateway.pinata.cloud/ipfs/${imageCid}?filename=snapshot.png`;
 
-    // --- 2) Upload metadata JSON
+    // 2) Upload metadata JSON
     const metadata = {
       name: 'Match & Mint Snapshot',
       description: 'A snapshot from the Match & Mint puzzle game',
-      image: imageGateway, // keep https gateway (not ipfs://) so explorers show it
+      image: imageGateway,
       attributes: [
         { trait_type: 'Game', value: 'Match & Mint' },
         { trait_type: 'Timestamp', value: new Date().toISOString() }
@@ -76,9 +68,9 @@ exports.handler = async (event) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        pinataMetadata: { name: `matchmint-metadata-${Date.now()}.json` }, // NEW: readable name
-        pinataOptions: { cidVersion: 1 },                                   // NEW: CIDv1
-        pinataContent: metadata,                                            // NEW: proper wrapper
+        pinataMetadata: { name: `matchmint-metadata-${Date.now()}.json` },
+        pinataOptions: { cidVersion: 1 },
+        pinataContent: metadata,
       }),
     });
 
@@ -86,16 +78,17 @@ exports.handler = async (event) => {
       const t = await metaRes.text().catch(() => '');
       return resp(502, { error: `Metadata upload failed: ${t}` });
     }
+
     const metaJson = await metaRes.json();
     const metadataCid = metaJson?.IpfsHash;
     if (!metadataCid) return resp(500, { error: 'Pinata did not return metadata CID' });
 
-    // Return HTTPS gateway URL (explorers prefer this)
     const gatewayUri = `https://gateway.pinata.cloud/ipfs/${metadataCid}?filename=metadata.json`;
     const ipfsUri = `ipfs://${metadataCid}`;
 
-    // NEW: warm the gateway (best-effort, ignore errors)
-    try { await fetch(gatewayUri, { method: 'GET', timeout: 4000 }); } catch (e) {}
+    // 3) Warm the gateway (best-effort)
+    try { await fetch(gatewayUri, { method: 'GET' }); } catch (_) {}
+    try { await fetch(imageGateway, { method: 'GET' }); } catch (_) {}
 
     return resp(200, { uri: gatewayUri, ipfsUri, imageGateway });
   } catch (err) {
