@@ -21,90 +21,18 @@ const ABI = [
       { "indexed": false, "internalType": "bool", "name": "approved", "type": "bool" }
     ], "name": "ApprovalForAll", "type": "event"
   },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
-    ], "name": "approve", "outputs": [], "stateMutability": "nonpayable", "type": "function"
-  },
-  {
-    "anonymous": false, "inputs": [
-      { "indexed": false, "internalType": "uint256", "name": "_fromTokenId", "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "_toTokenId", "type": "uint256" }
-    ], "name": "BatchMetadataUpdate", "type": "event"
-  },
-  {
-    "anonymous": false, "inputs": [
-      { "indexed": false, "internalType": "uint256", "name": "_tokenId", "type": "uint256" }
-    ], "name": "MetadataUpdate", "type": "event"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "string", "name": "uri", "type": "string" }
-    ],
-    "name": "mintNFT",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "from", "type": "address" },
-      { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
-    ], "name": "safeTransferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "from", "type": "address" },
-      { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
-      { "internalType": "bytes", "name": "data", "type": "bytes" }
-    ], "name": "safeTransferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "operator", "type": "address" },
-      { "internalType": "bool", "name": "approved", "type": "bool" }
-    ], "name": "setApprovalForAll", "outputs": [], "stateMutability": "nonpayable", "type": "function"
-  },
-  {
-    "anonymous": false, "inputs": [
-      { "indexed": true, "internalType": "address", "name": "from", "type": "address" },
-      { "indexed": true, "internalType": "address", "name": "to", "type": "address" },
-      { "indexed": true, "internalType": "uint256", "name": "tokenId", "type": "uint256" }
-    ], "name": "Transfer", "type": "event"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "from", "type": "address" },
-      { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
-    ], "name": "transferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
-    "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
-    "name": "getApproved", "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "owner", "type": "address" },
-      { "internalType": "address", "name": "operator", "type": "address" }
-    ],
-    "name": "isApprovedForAll",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
+  { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "approve", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "_fromTokenId", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "_toTokenId", "type": "uint256" }], "name": "BatchMetadataUpdate", "type": "event" },
+  { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "_tokenId", "type": "uint256" }], "name": "MetadataUpdate", "type": "event" },
+  { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "string", "name": "uri", "type": "string" }], "name": "mintNFT", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "safeTransferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "safeTransferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [{ "internalType": "address", "name": "operator", "type": "address" }, { "internalType": "bool", "name": "approved", "type": "bool" }], "name": "setApprovalForAll", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": true, "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "Transfer", "type": "event" },
+  { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "transferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+  { "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "getApproved", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+  { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "operator", "type": "address" }], "name": "isApprovedForAll", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" },
   { "inputs": [], "name": "name", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
   { "inputs": [], "name": "nextTokenId", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
   { "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }], "name": "ownerOf", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
@@ -134,7 +62,8 @@ const previewImg              = document.getElementById('previewImg');
 let provider, signer, contract;
 let imageList = [];
 let timerHandle, timeLeft = 45;
-let dragged = null;
+let draggedPiece = null;        // <— piece element
+let sourceSlot = null;          // <— its current slot
 const ROWS = 4, COLS = 4;
 
 // ── HELPERS: Providers ────────────────────────────────
@@ -152,28 +81,20 @@ function brandName(p) {
   return 'Injected';
 }
 
+// 🔇 NO PROMPT — pick a provider deterministically (MetaMask first)
 function getInjectedProvider() {
-  const { ethereum } = window;
   const pool = [];
-
-  if (ethereum?.providers && Array.isArray(ethereum.providers)) {
-    for (const p of ethereum.providers) pool.push(p);
-  }
-  if (ethereum && !pool.includes(ethereum)) pool.push(ethereum);
-  if (window.phantom?.ethereum && !pool.includes(window.phantom.ethereum)) {
-    pool.push(window.phantom.ethereum);
-  }
+  const eth = window.ethereum;
+  if (eth?.providers && Array.isArray(eth.providers)) pool.push(...eth.providers);
+  if (eth && !pool.includes(eth)) pool.push(eth);
+  if (window.phantom?.ethereum && !pool.includes(window.phantom.ethereum)) pool.push(window.phantom.ethereum);
   if (!pool.length) return null;
 
-  const options = pool.map((p, i) => `${i + 1}. ${brandName(p)}`).join('\n');
-  const choice = pool.length === 1
-    ? 1
-    : parseInt(prompt(`Multiple wallets detected:\n${options}\n\nChoose a number:`, '1'), 10);
-  const idx = (Number.isFinite(choice) ? choice : 1) - 1;
-  const selected = pool[Math.max(0, Math.min(pool.length - 1, idx))];
-
-  console.log('[wallet] selected:', brandName(selected));
-  return selected;
+  const rank = ["MetaMask","Rabby","Backpack","Coinbase Wallet","Brave Wallet","Phantom (EVM)","OKX Wallet","Trust Wallet","Frame","Injected"];
+  pool.sort((a,b)=> rank.indexOf(brandName(a)) - rank.indexOf(brandName(b)));
+  const chosen = pool[0];
+  console.log('[wallet] selected:', brandName(chosen));
+  return chosen;
 }
 
 async function switchToMonad(ethersProvider) {
@@ -229,146 +150,145 @@ async function connectInjected() {
   } catch (err) {
     console.error('[wallet] connectInjected failed:', err);
     const code = err?.code;
-    if (code === 4001) {
-      alert('Connection rejected in wallet.');
-    } else if (code === -32002) {
-      alert('A connection request is already pending—open your wallet popup.');
-    } else {
-      alert('Wallet connection failed: ' + (err?.message || err));
-    }
+    if (code === 4001) alert('Connection rejected in wallet.');
+    else if (code === -32002) alert('A connection request is already pending—open your wallet popup.');
+    else alert('Wallet connection failed: ' + (err?.message || err));
   }
 }
 
-// Placeholder เพื่อกัน ReferenceError ถ้าปุ่มถูกกด
-function connectWalletConnect() {
-  alert('WalletConnect coming soon 🤝');
-}
+// keep global for the HTML safety net
+window.connectInjected = connectInjected;
+
+// Placeholder
+function connectWalletConnect() { alert('WalletConnect coming soon 🤝'); }
 
 // ── ASSET HELPERS ─────────────────────────────────────
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-function pickRandomImage() {
-  if (!imageList.length) return 'preview.png';
-  const file = imageList[Math.floor(Math.random() * imageList.length)];
-  return `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`;
-}
+function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
+function pickRandomImage() { if (!imageList.length) return 'preview.png'; const file = imageList[Math.floor(Math.random() * imageList.length)]; return `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/${IMAGES_PATH}/${file}`; }
 async function loadImageList() {
   const url = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${ASSETS_REPO}@${GITHUB_BRANCH}/list.json`;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(res.status);
-    imageList = await res.json();
-  } catch {
-    alert('⚠️ Could not load asset list.');
-  }
+  try { const res = await fetch(url); if (!res.ok) throw new Error(res.status); imageList = await res.json(); }
+  catch { alert('⚠️ Could not load asset list.'); }
 }
-// preload image via CORS (prevents white snapshots)
 async function preloadImage(url) {
   await new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve();
-    img.onerror = reject;
+    const img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = resolve; img.onerror = reject;
     img.src = url + (url.includes('?') ? '&' : '?') + 'cachebust=' + Date.now();
   });
 }
 
-// ── PUZZLE + LOCKING ──────────────────────────────────
-function isInCorrectSlot(cell) {
-  const idxNow = Array.from(puzzleGrid.children).indexOf(cell);
-  return idxNow === Number(cell.dataset.index);
+// ── PUZZLE WITH FIXED SLOTS (true lock) ───────────────
+// We create 16 fixed "slots". Each piece sits inside a slot.
+// Locking = lock the slot, so its piece can never be displaced by later moves.
+function makeSlot(i) {
+  const slot = document.createElement('div');
+  slot.className = 'slot';         // container for a piece
+  slot.dataset.slot = i;           // the index this slot represents
+  // allow drops on the slot itself
+  slot.addEventListener('dragover', (e) => { e.preventDefault(); });
+  slot.addEventListener('dragenter', (e) => { e.preventDefault(); });
+  slot.addEventListener('drop', (e) => handleDropOnSlot(e, slot));
+  return slot;
 }
-function lockCell(cell) {
-  cell.classList.add('locked');
-  cell.draggable = false;
+
+function makePiece(i, imageUrl) {
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.dataset.piece = i;           // which piece image this is (0..15)
+  cell.style.width = '100%';
+  cell.style.height = '100%';
+
+  const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
+  Object.assign(cell.style, {
+    backgroundImage: `url(${imageUrl})`,
+    backgroundSize: `${COLS*100}px ${ROWS*100}px`,
+    backgroundPosition: `-${x}px -${y}px`
+  });
+
+  cell.draggable = true;
+
+  cell.addEventListener('dragstart', (e) => {
+    const parentSlot = cell.parentElement;
+    if (parentSlot?.classList.contains('locked')) { e.preventDefault(); return; }
+    draggedPiece = cell;
+    sourceSlot = parentSlot;
+    cell.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', cell.dataset.piece);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.dropEffect = 'move';
+    const ghost = document.createElement('div'); ghost.style.width='1px'; ghost.style.height='1px';
+    document.body.appendChild(ghost); e.dataTransfer.setDragImage(ghost,0,0); setTimeout(()=>ghost.remove(),0);
+  });
+
+  cell.addEventListener('dragend', () => {
+    cell.classList.remove('dragging');
+    draggedPiece = null; sourceSlot = null;
+  });
+
+  return cell;
 }
-function unlockCell(cell) {
-  if (cell.classList.contains('locked')) {
-    cell.classList.remove('locked');
-    cell.draggable = true;
+
+function handleDropOnSlot(e, targetSlot) {
+  e.preventDefault();
+  if (!draggedPiece) return;
+  if (targetSlot.classList.contains('locked')) return;        // can't drop into locked slot
+  if (sourceSlot?.classList.contains('locked')) return;       // can't move out of locked slot
+
+  const occupant = targetSlot.firstElementChild;
+
+  // move dragged piece into targetSlot
+  targetSlot.appendChild(draggedPiece);
+
+  // if target had a piece, send it to the sourceSlot (swap)
+  if (occupant) sourceSlot.appendChild(occupant);
+
+  // re-evaluate locks for both involved slots
+  checkAndLockSlot(targetSlot);
+  if (sourceSlot) checkAndLockSlot(sourceSlot);
+}
+
+function checkAndLockSlot(slot) {
+  const piece = slot.firstElementChild;
+  if (!piece) return;
+  const correct = Number(slot.dataset.slot) === Number(piece.dataset.piece);
+  if (correct) {
+    slot.classList.add('locked');
+    piece.classList.add('locked');
+    piece.draggable = false;
+  } else {
+    slot.classList.remove('locked');
+    piece.classList.remove('locked');
+    piece.draggable = true;
   }
 }
-function checkAndLockAll() {
-  const kids = Array.from(puzzleGrid.children);
-  for (const c of kids) {
-    if (isInCorrectSlot(c)) lockCell(c);
-    else unlockCell(c);
-  }
-  // optional: auto-enable mint only when solved (all locked)
-  const solved = kids.every(c => c.classList.contains('locked'));
-  if (mintBtn) mintBtn.disabled = !solved ? false : false; // keep your existing flow (change to "!solved" if you want mint only when solved)
+
+function checkSolved() {
+  const slots = Array.from(puzzleGrid.children);
+  return slots.every(s => s.classList.contains('locked'));
 }
 
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
-  const cells = [];
+
+  // 1) create all slots (fixed positions)
+  const slots = [];
   for (let i = 0; i < ROWS * COLS; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    cell.dataset.index = i; // correct index for this piece
-
-    const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
-    Object.assign(cell.style, {
-      backgroundImage: `url(${imageUrl})`,
-      backgroundSize: `${COLS*100}px ${ROWS*100}px`,
-      backgroundPosition: `-${x}px -${y}px`
-    });
-
-    // ✅ Safari/WebKit-safe dragging
-    cell.draggable = true;
-
-    cell.addEventListener('dragstart', (e) => {
-      if (cell.classList.contains('locked')) { e.preventDefault(); return; }
-      dragged = cell;
-      cell.classList.add('dragging');
-      e.dataTransfer.setData('text/plain', cell.dataset.index);
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.dropEffect = 'move';
-      const ghost = document.createElement('div');
-      ghost.style.width = '1px';
-      ghost.style.height = '1px';
-      document.body.appendChild(ghost);
-      e.dataTransfer.setDragImage(ghost, 0, 0);
-      setTimeout(() => ghost.remove(), 0);
-    });
-
-    cell.addEventListener('dragend', () => {
-      if (dragged === cell) dragged = null;
-      cell.classList.remove('dragging');
-    });
-
-    // must preventDefault on both events for WebKit
-    cell.addEventListener('dragover', (e) => e.preventDefault());
-    cell.addEventListener('dragenter', (e) => e.preventDefault());
-
-    cell.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const target = e.target.closest('.cell');
-      if (!dragged || !target || dragged === target) return;
-      if (target.classList.contains('locked')) return; // ⛔ can't drop onto a locked piece
-      if (dragged.classList.contains('locked')) return; // safety
-
-      const kids = Array.from(puzzleGrid.children);
-      const i1 = kids.indexOf(dragged);
-      const i2 = kids.indexOf(target);
-      const ref = (i2 > i1) ? target.nextSibling : target;
-      puzzleGrid.insertBefore(dragged, ref);
-
-      // after placement, lock any pieces that land in correct slots
-      checkAndLockAll();
-    });
-
-    cells.push(cell);
+    const slot = makeSlot(i);
+    slots.push(slot);
+    puzzleGrid.appendChild(slot);
   }
-  shuffle(cells);
-  cells.forEach(c => puzzleGrid.appendChild(c));
 
-  // lock any pieces that happened to start in the correct slot after shuffle
-  checkAndLockAll();
+  // 2) create all pieces
+  const pieces = [];
+  for (let i = 0; i < ROWS * COLS; i++) pieces.push(makePiece(i, imageUrl));
+  shuffle(pieces);
+
+  // 3) place pieces into slots randomly
+  for (let i = 0; i < slots.length; i++) {
+    slots[i].appendChild(pieces[i]);
+    checkAndLockSlot(slots[i]); // lock if by chance correct initially
+  }
 }
 
 function startTimer() {
@@ -405,8 +325,7 @@ if (startBtn) {
     restartBtn.disabled = true;
     if (!imageList.length) await loadImageList();
     const imageUrl = pickRandomImage();
-
-    await preloadImage(imageUrl); // ensure CORS-ready
+    await preloadImage(imageUrl);
     previewImg.src = imageUrl;
     buildPuzzle(imageUrl);
     startTimer();
@@ -419,41 +338,26 @@ async function mintSnapshot() {
     if (!puzzleGrid.children.length) throw new Error('No puzzle to mint');
 
     // ensure the image is loaded before snapshot
-    const firstCell = puzzleGrid.querySelector('.cell');
-    const bg = firstCell && firstCell.style && firstCell.style.backgroundImage;
+    const firstSlot = puzzleGrid.firstElementChild;
+    const firstPiece = firstSlot?.firstElementChild;
+    const bg = firstPiece?.style?.backgroundImage;
     const match = bg && bg.match(/url\("(.*)"\)/);
     const imgUrl = match && match[1];
     if (imgUrl) await preloadImage(imgUrl);
 
     const canvas = await html2canvas(puzzleGrid, {
-      width: 420,
-      height: 420,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      allowTaint: false,
-      imageTimeout: 0,
-      scale: 1,
-      logging: false
+      width: 420, height: 420, backgroundColor: '#ffffff',
+      useCORS: true, allowTaint: false, imageTimeout: 0, scale: 1, logging: false
     });
 
     const snapshot = canvas.toDataURL('image/png');
-
-    // dev = localhost:3000, prod = same origin (Netlify redirect handles /api/*)
-    const apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
-      : '';
+    const apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
 
     const res = await fetch(`${apiBase}/api/upload`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: snapshot })
     });
-
-    if (!res.ok) {
-      let msg = 'Upload failed';
-      try { const j = await res.json(); msg = j.error || msg; } catch {}
-      throw new Error(msg);
-    }
+    if (!res.ok) { let msg='Upload failed'; try{const j=await res.json(); msg=j.error||msg;}catch{} throw new Error(msg); }
 
     const upload = await res.json();
     const metaUri = upload.uri;
