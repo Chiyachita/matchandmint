@@ -649,6 +649,7 @@ startBtn.addEventListener('click', async () => {
 });
 
 // ── MINT SNAPSHOT via SERVERLESS FUNCTION ────────────────
+// แทนที่ฟังก์ชัน mintSnapshot เดิมทั้งบล็อกด้วยอันนี้
 async function mintSnapshot() {
   try {
     if (!puzzleGrid.children.length) throw new Error('No puzzle to mint');
@@ -660,36 +661,31 @@ async function mintSnapshot() {
     });
 
     const snapshot = canvas.toDataURL('image/png');
-    const base64 = snapshot.split(',')[1];
 
-    // ✅ Netlify-compatible upload (same-origin to serverless function)
-const res = await fetch('/.netlify/functions/upload', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ image: snapshot })
-});
+    // เลือก base URL ให้ถูก: dev = localhost:3000, prod = origin เดียวกัน
+    const apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:3000'
+      : '';
 
-const raw = await res.text();
-if (!res.ok) {
-  // ให้เห็น error จากฟังก์ชันชัด ๆ
-  throw new Error(`Upload failed [${res.status}]: ${raw}`);
-}
-
-let json;
-try { json = JSON.parse(raw); } catch (e) { throw new Error('Upload response not JSON: ' + raw); }
-const { uri } = json;
-if (!uri) throw new Error('No tokenURI from upload function');
-
+    const res = await fetch(`${apiBase}/api/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: snapshot })
+    });
 
     if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || 'Upload failed');
+      // พยายามอ่านข้อความแปลผิด
+      let msg = 'Upload failed';
+      try { const j = await res.json(); msg = j.error || msg; } catch {}
+      throw new Error(msg);
     }
 
-    const { uri } = await res.json();
-    if (!uri) throw new Error('Upload failed');
+    // เลี่ยงชื่อชนซ้ำ: อย่าใช้ชื่อ 'uri' ตรง ๆ
+    const upload = await res.json();
+    const metaUri = upload.uri;
+    if (!metaUri) throw new Error('No metadata URI returned');
 
-    const tx = await contract.mintNFT(await signer.getAddress(), uri);
+    const tx = await contract.mintNFT(await signer.getAddress(), metaUri);
     await tx.wait();
 
     previewImg.src = snapshot;
@@ -702,12 +698,3 @@ if (!uri) throw new Error('No tokenURI from upload function');
     alert('Mint failed: ' + err.message);
   }
 }
-
-mintBtn.addEventListener('click', mintSnapshot);
-connectInjectedBtn.addEventListener('click', connectInjected);
-connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
-
-(async function init() {
-  await loadImageList();
-  if (imageList.length) previewImg.src = pickRandomImage();
-})();
