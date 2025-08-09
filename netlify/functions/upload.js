@@ -1,92 +1,80 @@
-const FormData = require('form-data');
+// Netlify Function: /api/upload  (Node 18+)
+import fetch from "node-fetch";
+import FormData from "form-data";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-exports.handler = async (event) => {
-  // Preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
-  }
-
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method not allowed' }) };
-  }
-
+export const handler = async (event) => {
   try {
     const PINATA_JWT = process.env.PINATA_JWT;
     if (!PINATA_JWT) {
-      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: 'PINATA_JWT not configured' }) };
+      return resp(500, { error: "Missing PINATA_JWT env on Netlify" });
     }
 
-    const { image } = JSON.parse(event.body || '{}');
-    if (!image) {
-      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'Missing image data' }) };
+    if (event.httpMethod !== "POST") {
+      return resp(405, { error: "Method Not Allowed" });
     }
 
-    // base64 → Buffer
-    const base64 = image.split(',')[1] || image;
-    const buffer = Buffer.from(base64, 'base64');
+    const body = JSON.parse(event.body || "{}");
+    const image = body.image;
+    if (!image || !image.startsWith("data:image/png;base64,")) {
+      return resp(400, { error: "Invalid image data" });
+    }
 
-    // Step 1: upload file to Pinata
-    const imageForm = new FormData();
-    imageForm.append('file', buffer, { filename: 'puzzle.png', contentType: 'image/png' });
+    // 1) upload image
+    const base64 = image.replace(/^data:image\/png;base64,/, "");
+    const buffer = Buffer.from(base64, "base64");
 
-    const imageRes = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-      method: 'POST',
+    const imgForm = new FormData();
+    imgForm.append("file", buffer, { filename: "snapshot.png", contentType: "image/png" });
+
+    const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+      method: "POST",
       headers: { Authorization: `Bearer ${PINATA_JWT}` },
-      body: imageForm
+      body: imgForm
     });
 
-    if (!imageRes.ok) {
-      const error = await imageRes.text();
-      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: `Image upload failed: ${error}` }) };
+    if (!imgRes.ok) {
+      const t = await imgRes.text();
+      return resp(401, { error: `Image upload failed: ${t}` });
     }
+    const imgJson = await imgRes.json();
+    const imageCid = imgJson.IpfsHash;
 
-    const imageResult = await imageRes.json();
-    const imageCid = imageResult.IpfsHash;
-
-    // Step 2: upload metadata
+    // 2) upload metadata
     const metadata = {
-      name: "Match and Mint Puzzle NFT",
-      description: "A unique puzzle arrangement created in the Match and Mint game",
-      image: `ipfs://${imageCid}`,
-      attributes: [
-        { trait_type: "Game", value: "Match and Mint" },
-        { trait_type: "Creation Date", value: new Date().toISOString() }
-      ]
+      name: "Match & Mint Snapshot",
+      description: "A snapshot from the puzzle game",
+      image: `ipfs://${imageCid}`
     };
 
-    const metaRes = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
-      method: 'POST',
+    const metaRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${PINATA_JWT}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(metadata)
     });
 
     if (!metaRes.ok) {
-      const error = await metaRes.text();
-      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: `Metadata upload failed: ${error}` }) };
+      const t = await metaRes.text();
+      return resp(401, { error: `Metadata upload failed: ${t}` });
     }
+    const metaJson = await metaRes.json();
+    const metadataCid = metaJson.IpfsHash;
 
-    const metaResult = await metaRes.json();
-    const metadataCid = metaResult.IpfsHash;
-
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({ uri: `ipfs://${metadataCid}` })
-    };
+    return resp(200, { uri: `ipfs://${metadataCid}` });
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Unexpected server error: ' + err.message })
-    };
+    return resp(500, { error: "Unexpected: " + (err?.message || String(err)) });
   }
 };
+
+function resp(statusCode, obj) {
+  return {
+    statusCode,
+    headers: {
+      "content-type": "application/json",
+      "access-control-allow-origin": "*"
+    },
+    body: JSON.stringify(obj)
+  };
+}
