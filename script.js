@@ -1,3 +1,4 @@
+<script>
 // ✅ Updated app.js with Pinata JWT upload using Netlify Function
 
 // ── CONFIG ────────────────────────────────────────────
@@ -465,81 +466,68 @@ function getInjectedProvider() {
   return ethereum;
 }
 
+// ✅ Robust chain switch (ใช้ eth_chainId + explorer URL ที่ถูก)
 async function switchToMonad(ethersProvider) {
   try {
-    const { chainId } = await ethersProvider.getNetwork();
-    if (chainId !== CHAIN_ID) {
-      try {
-        await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
-      } catch (switchError) {
-        // If network doesn't exist, try to add it
-        if (switchError.code === 4902) {
-          await ethersProvider.send('wallet_addEthereumChain', [{
-            chainId: CHAIN_ID_HEX,
-            chainName: 'Monad Testnet',
-            nativeCurrency: {
-              name: 'MON',
-              symbol: 'MON',
-              decimals: 18
-            },
-            rpcUrls: ['https://testnet-rpc.monad.xyz'],
-            blockExplorerUrls: ['https://testnet-explorer.monad.xyz']
-          }]);
-        } else {
-          throw switchError;
-        }
+    const chainIdHex = await ethersProvider.send('eth_chainId', []);
+    if (chainIdHex?.toLowerCase() === CHAIN_ID_HEX.toLowerCase()) return;
+
+    try {
+      await ethersProvider.send('wallet_switchEthereumChain', [{ chainId: CHAIN_ID_HEX }]);
+    } catch (e) {
+      if (e?.code === 4902 || /Unrecognized chain ID/i.test(e?.message || '')) {
+        await ethersProvider.send('wallet_addEthereumChain', [{
+          chainId: CHAIN_ID_HEX,
+          chainName: 'Monad Testnet',
+          nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+          rpcUrls: ['https://testnet-rpc.monad.xyz'],
+          blockExplorerUrls: ['https://testnet.monadexplorer.com']
+        }]);
+      } else {
+        throw e;
       }
     }
   } catch (err) {
     console.error('Network switch failed:', err);
-    throw new Error('Failed to switch to Monad Testnet: ' + err.message);
+    throw new Error('Failed to switch to Monad Testnet: ' + (err.message || err));
   }
 }
 
-async function connectInjectedWallet() {
+// ✅ Connect (multi-provider-friendly) + อัปเดตสถานะ + ปลดล็อกปุ่ม mint
+async function connectInjected() {
+  const injected = getInjectedProvider();
+  if (!injected) {
+    alert('No injected wallet found! Please install MetaMask, Backpack, or another Web3 wallet.');
+    return;
+  }
+
   try {
-    if (!window.ethereum) throw new Error("No Ethereum provider found");
-
-    let selectedProvider = window.ethereum;
-
-    // ถ้ามีหลาย provider ให้ผู้ใช้เลือก
-    if (window.ethereum.providers?.length) {
-      const brands = window.ethereum.providers.map((p, i) => {
-        if (p.isMetaMask) return { name: "MetaMask", index: i };
-        if (p.isBackpack) return { name: "Backpack", index: i };
-        if (p.isRabby) return { name: "Rabby", index: i };
-        return { name: `Wallet ${i+1}`, index: i };
-      });
-
-      const brandNames = brands.map((b, i) => `${i+1}. ${b.name}`).join("\n");
-      const choice = prompt(
-        "Multiple wallets detected. Choose a provider:\n" + brandNames,
-        "1"
-      );
-
-      const idx = parseInt(choice, 10) - 1;
-      if (idx >= 0 && idx < brands.length) {
-        selectedProvider = window.ethereum.providers[brands[idx].index];
-      }
+    // Try existing accounts first to avoid -32002
+    let accounts = await injected.request({ method: 'eth_accounts' }).catch(() => []);
+    if (!accounts || accounts.length === 0) {
+      accounts = await injected.request({ method: 'eth_requestAccounts' });
+    }
+    if (!accounts || accounts.length === 0) {
+      throw new Error('No accounts returned from wallet');
     }
 
-    await selectedProvider.request({ method: "eth_requestAccounts" });
+    const ethersProvider = new ethers.providers.Web3Provider(injected, 'any');
+    await switchToMonad(ethersProvider);
+    await finishConnect(ethersProvider);
 
-    provider = new ethers.providers.Web3Provider(selectedProvider);
-    signer = provider.getSigner();
-
-    const address = await signer.getAddress();
-    walletBtn.textContent =
-      address.slice(0, 6) + "..." + address.slice(-4);
-
-    startBtn.disabled = false;
+    walletStatus.textContent = `Connected: ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)} (Monad)`;
     mintBtn.disabled = false;
-
   } catch (err) {
-    alert("Wallet connection failed: " + err.message);
+    console.error('Injected connect failed', err);
+    if (err.code === 4001) {
+      alert('Wallet connection was rejected by user.');
+    } else if (err.code === -32002) {
+      alert('Wallet connection request is already pending. Please open your wallet.');
+    } else {
+      alert('Failed to connect wallet: ' + (err.message || err));
+    }
   }
 }
-
 
 async function finishConnect(ethersProvider) {
   provider = ethersProvider;
@@ -644,7 +632,6 @@ startBtn.addEventListener('click', async () => {
 });
 
 // ── MINT SNAPSHOT via SERVERLESS FUNCTION ────────────────
-// แทนที่ฟังก์ชัน mintSnapshot เดิมทั้งบล็อกด้วยอันนี้
 async function mintSnapshot() {
   try {
     if (!puzzleGrid.children.length) throw new Error('No puzzle to mint');
@@ -657,7 +644,7 @@ async function mintSnapshot() {
 
     const snapshot = canvas.toDataURL('image/png');
 
-    // เลือก base URL ให้ถูก: dev = localhost:3000, prod = origin เดียวกัน
+    // dev = localhost:3000, prod = origin เดียวกัน
     const apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:3000'
       : '';
@@ -669,13 +656,11 @@ async function mintSnapshot() {
     });
 
     if (!res.ok) {
-      // พยายามอ่านข้อความแปลผิด
       let msg = 'Upload failed';
       try { const j = await res.json(); msg = j.error || msg; } catch {}
       throw new Error(msg);
     }
 
-    // เลี่ยงชื่อชนซ้ำ: อย่าใช้ชื่อ 'uri' ตรง ๆ
     const upload = await res.json();
     const metaUri = upload.uri;
     if (!metaUri) throw new Error('No metadata URI returned');
@@ -693,3 +678,14 @@ async function mintSnapshot() {
     alert('Mint failed: ' + err.message);
   }
 }
+
+mintBtn.addEventListener('click', mintSnapshot);
+connectInjectedBtn.addEventListener('click', connectInjected);
+connectWalletConnectBtn.addEventListener('click', connectWalletConnect);
+
+// preload list + preview
+(async function init() {
+  await loadImageList();
+  if (imageList.length) previewImg.src = pickRandomImage();
+})();
+</script>
