@@ -12,14 +12,14 @@ exports.handler = async function (event) {
   }
 
   try {
-    // Parse snapshot image from body (base64)
-    const { snapshot, metadata } = JSON.parse(event.body);
-    if (!snapshot || !metadata) {
-      return { statusCode: 400, body: 'Missing snapshot or metadata' };
+    // Parse image from body (base64)
+    const { image } = JSON.parse(event.body);
+    if (!image) {
+      return { statusCode: 400, body: 'Missing image data' };
     }
 
     // Convert base64 to buffer
-    const base64 = snapshot.split(',')[1];
+    const base64 = image.split(',')[1];
     const buffer = Buffer.from(base64, 'base64');
 
     // Step 1: Upload image to Pinata
@@ -40,8 +40,22 @@ exports.handler = async function (event) {
     const imageResult = await imageRes.json();
     const imageCid = imageResult.IpfsHash;
 
-    // Step 2: Upload metadata
-    metadata.image = `ipfs://${imageCid}`;
+    // Step 2: Create and upload metadata
+    const metadata = {
+      name: "Match and Mint Puzzle NFT",
+      description: "A unique puzzle arrangement created in the Match and Mint game",
+      image: `ipfs://${imageCid}`,
+      attributes: [
+        {
+          trait_type: "Game",
+          value: "Match and Mint"
+        },
+        {
+          trait_type: "Creation Date",
+          value: new Date().toISOString()
+        }
+      ]
+    };
     const metaRes = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
       method: 'POST',
       headers: {
@@ -61,7 +75,7 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ cid: metadataCid }),
+      body: JSON.stringify({ uri: `ipfs://${metadataCid}` }),
     };
   } catch (err) {
     console.error('Upload error:', err);
