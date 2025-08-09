@@ -496,55 +496,50 @@ async function switchToMonad(ethersProvider) {
   }
 }
 
-async function connectInjected() {
-  const injected = getInjectedProvider();
-  if (!injected) {
-    alert('No injected wallet found! Please install MetaMask, Backpack, or another Web3 wallet.');
-    return;
-  }
-
+async function connectInjectedWallet() {
   try {
-    const accounts = await injected.request({ method: 'eth_requestAccounts' });
-    if (!accounts || accounts.length === 0) {
-      throw new Error('No accounts returned from wallet');
+    if (!window.ethereum) throw new Error("No Ethereum provider found");
+
+    let selectedProvider = window.ethereum;
+
+    // ถ้ามีหลาย provider ให้ผู้ใช้เลือก
+    if (window.ethereum.providers?.length) {
+      const brands = window.ethereum.providers.map((p, i) => {
+        if (p.isMetaMask) return { name: "MetaMask", index: i };
+        if (p.isBackpack) return { name: "Backpack", index: i };
+        if (p.isRabby) return { name: "Rabby", index: i };
+        return { name: `Wallet ${i+1}`, index: i };
+      });
+
+      const brandNames = brands.map((b, i) => `${i+1}. ${b.name}`).join("\n");
+      const choice = prompt(
+        "Multiple wallets detected. Choose a provider:\n" + brandNames,
+        "1"
+      );
+
+      const idx = parseInt(choice, 10) - 1;
+      if (idx >= 0 && idx < brands.length) {
+        selectedProvider = window.ethereum.providers[brands[idx].index];
+      }
     }
-    const ethersProvider = new ethers.providers.Web3Provider(injected, 'any');
-    await switchToMonad(ethersProvider);
-    finishConnect(ethersProvider);
+
+    await selectedProvider.request({ method: "eth_requestAccounts" });
+
+    provider = new ethers.providers.Web3Provider(selectedProvider);
+    signer = provider.getSigner();
+
+    const address = await signer.getAddress();
+    walletBtn.textContent =
+      address.slice(0, 6) + "..." + address.slice(-4);
+
+    startBtn.disabled = false;
+    mintBtn.disabled = false;
+
   } catch (err) {
-    console.error('Injected connect failed', err);
-    if (err.code === 4001) {
-      alert('Wallet connection was rejected by user.');
-    } else if (err.code === -32002) {
-      alert('Wallet connection request is already pending. Please check your wallet.');
-    } else {
-      alert('Failed to connect wallet: ' + err.message);
-    }
+    alert("Wallet connection failed: " + err.message);
   }
 }
 
-async function connectWalletConnect() {
-  try {
-    if (!window.WalletConnectProvider) {
-      throw new Error('WalletConnect library not loaded');
-    }
-    const wcProvider = new WalletConnectProvider.default({
-      rpc: { [CHAIN_ID]: 'https://testnet-rpc.monad.xyz' },
-      chainId: CHAIN_ID
-    });
-    await wcProvider.enable();
-    const ethersProvider = new ethers.providers.Web3Provider(wcProvider, 'any');
-    await switchToMonad(ethersProvider);
-    finishConnect(ethersProvider);
-  } catch (err) {
-    console.error('WalletConnect failed', err);
-    if (err.message.includes('User rejected')) {
-      alert('WalletConnect connection was rejected by user.');
-    } else {
-      alert('Failed to connect via WalletConnect: ' + err.message);
-    }
-  }
-}
 
 async function finishConnect(ethersProvider) {
   provider = ethersProvider;
