@@ -48,7 +48,7 @@ app.post('/api/upload', async (req, res) => {
     const metadata = {
       name: "Match and Mint Puzzle NFT",
       description: "A unique puzzle arrangement created in the Match and Mint game",
-      image: `ipfs://${imageCid}`,
+     image: `https://gateway.pinata.cloud/ipfs/${imageCid}`
       attributes: [
         {
           trait_type: "Game",
