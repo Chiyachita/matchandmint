@@ -327,14 +327,14 @@ body::before {
   }
 }
 
-/* ==== Stability patches (appended) ==== */
+/* ==== Stability patches & lock styling (appended) ==== */
 
 /* prevent selection everywhere */
 body, .grid, .cell {
   user-select: none;
   -webkit-user-select: none;
 }
-/* but only block native WebKit drag on container (NOT on pieces) */
+/* only block native WebKit drag on container (NOT on pieces) */
 body, .grid {
   -webkit-user-drag: none;
 }
@@ -355,6 +355,12 @@ body, .grid {
 .cell.dragging:hover,
 .cell.dragging:active {
   transform: none !important;
+}
+
+/* locked pieces: non-draggable, visual stays consistent (subtle ring only) */
+.cell.locked {
+  cursor: default !important;
+  box-shadow: 0 0 0 2px rgba(76,81,191,.18), 0 2px 8px rgba(0,0,0,.10);
 }
 
 /* respect reduced motion users */
