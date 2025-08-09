@@ -371,3 +371,36 @@ body, .grid {
     transform: none !important;
   }
 }
+// --- SAFETY NET: ensure connect button is clickable everywhere ---
+function wireConnectButton() {
+  const btn = document.getElementById('connectInjectedBtn');
+  if (!btn) {
+    console.warn('[connect] #connectInjectedBtn not found in DOM');
+    return;
+  }
+  btn.disabled = false;
+  // remove duplicate handlers by cloning (simple dedupe)
+  const clone = btn.cloneNode(true);
+  btn.parentNode.replaceChild(clone, btn);
+
+  clone.addEventListener('click', (e) => {
+    e.preventDefault();
+    connectInjected();
+  });
+  console.log('[connect] wired direct handler on #connectInjectedBtn');
+}
+
+// try now
+wireConnectButton();
+
+// try again when DOM is ready (in case script loaded in <head>)
+document.addEventListener('DOMContentLoaded', wireConnectButton);
+
+// ultimate fallback: delegation (works even if button is added later)
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('#connectInjectedBtn');
+  if (!t) return;
+  e.preventDefault();
+  connectInjected();
+  console.log('[connect] delegated click fired');
+});
