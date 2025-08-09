@@ -185,15 +185,18 @@ function makeSlot(i) {
   return slot;
 }
 
-function makePiece(i, imageUrl) {
+// CHANGED: now uses real tile size instead of hardcoded 100px
+function makePiece(i, imageUrl, tileW, tileH) {
   const cell = document.createElement('div');
   cell.className = 'cell';
   cell.dataset.piece = i;
 
-  const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
+  const x = (i % COLS) * tileW;
+  const y = Math.floor(i / COLS) * tileH;
+
   Object.assign(cell.style, {
     backgroundImage: `url(${imageUrl})`,
-    backgroundSize: `${COLS*100}px ${ROWS*100}px`,
+    backgroundSize: `${COLS * tileW}px ${ROWS * tileH}px`,
     backgroundPosition: `-${x}px -${y}px`,
     width: '100%', height: '100%'
   });
@@ -250,9 +253,11 @@ function checkAndLockSlot(slot) {
   }
 }
 
+// CHANGED: measure actual slot size and use it for background math
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
 
+  // 1) create slots
   const slots = [];
   for (let i = 0; i < ROWS * COLS; i++) {
     const slot = makeSlot(i);
@@ -260,10 +265,17 @@ function buildPuzzle(imageUrl) {
     puzzleGrid.appendChild(slot);
   }
 
+  // 2) measure a real slot (accounts for gap/padding)
+  const slotRect = slots[0].getBoundingClientRect();
+  const tileW = slotRect.width;
+  const tileH = slotRect.height;
+
+  // 3) create pieces using real tile size
   const pieces = [];
-  for (let i = 0; i < ROWS * COLS; i++) pieces.push(makePiece(i, imageUrl));
+  for (let i = 0; i < ROWS * COLS; i++) pieces.push(makePiece(i, imageUrl, tileW, tileH));
   shuffle(pieces);
 
+  // 4) place pieces and lock those already correct
   for (let i = 0; i < slots.length; i++) {
     slots[i].appendChild(pieces[i]);
     checkAndLockSlot(slots[i]);
