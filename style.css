@@ -329,10 +329,13 @@ body::before {
 
 /* ==== Stability patches (appended) ==== */
 
-/* prevent text/image selection + native image drag while dragging pieces */
+/* prevent selection everywhere */
 body, .grid, .cell {
   user-select: none;
   -webkit-user-select: none;
+}
+/* but only block native WebKit drag on container (NOT on pieces) */
+body, .grid {
   -webkit-user-drag: none;
 }
 
