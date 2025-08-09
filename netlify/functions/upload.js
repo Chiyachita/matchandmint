@@ -43,7 +43,7 @@ export const handler = async (event) => {
     const metadata = {
       name: "Match & Mint Snapshot",
       description: "A snapshot from the puzzle game",
-      image: `ipfs://${imageCid}`
+      image: `https://gateway.pinata.cloud/ipfs/${imageCid}`
     };
 
     const metaRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
