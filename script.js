@@ -62,8 +62,8 @@ const previewImg              = document.getElementById('previewImg');
 let provider, signer, contract;
 let imageList = [];
 let timerHandle, timeLeft = 45;
-let draggedPiece = null;        // <— piece element
-let sourceSlot = null;          // <— its current slot
+let draggedPiece = null;
+let sourceSlot = null;
 const ROWS = 4, COLS = 4;
 
 // ── HELPERS: Providers ────────────────────────────────
@@ -81,7 +81,7 @@ function brandName(p) {
   return 'Injected';
 }
 
-// 🔇 NO PROMPT — pick a provider deterministically (MetaMask first)
+// silent deterministic pick (no prompt)
 function getInjectedProvider() {
   const pool = [];
   const eth = window.ethereum;
@@ -134,7 +134,6 @@ async function finishConnect(ethersProvider) {
   if (mintBtn) mintBtn.disabled = false;
 }
 
-// ── CONNECT FLOWS ─────────────────────────────────────
 async function connectInjected() {
   const injected = getInjectedProvider();
   if (!injected) {
@@ -155,11 +154,8 @@ async function connectInjected() {
     else alert('Wallet connection failed: ' + (err?.message || err));
   }
 }
-
-// keep global for the HTML safety net
 window.connectInjected = connectInjected;
 
-// Placeholder
 function connectWalletConnect() { alert('WalletConnect coming soon 🤝'); }
 
 // ── ASSET HELPERS ─────────────────────────────────────
@@ -179,13 +175,10 @@ async function preloadImage(url) {
 }
 
 // ── PUZZLE WITH FIXED SLOTS (true lock) ───────────────
-// We create 16 fixed "slots". Each piece sits inside a slot.
-// Locking = lock the slot, so its piece can never be displaced by later moves.
 function makeSlot(i) {
   const slot = document.createElement('div');
-  slot.className = 'slot';         // container for a piece
-  slot.dataset.slot = i;           // the index this slot represents
-  // allow drops on the slot itself
+  slot.className = 'slot';
+  slot.dataset.slot = i;
   slot.addEventListener('dragover', (e) => { e.preventDefault(); });
   slot.addEventListener('dragenter', (e) => { e.preventDefault(); });
   slot.addEventListener('drop', (e) => handleDropOnSlot(e, slot));
@@ -195,15 +188,14 @@ function makeSlot(i) {
 function makePiece(i, imageUrl) {
   const cell = document.createElement('div');
   cell.className = 'cell';
-  cell.dataset.piece = i;           // which piece image this is (0..15)
-  cell.style.width = '100%';
-  cell.style.height = '100%';
+  cell.dataset.piece = i;
 
   const x = (i % COLS) * 100, y = Math.floor(i / COLS) * 100;
   Object.assign(cell.style, {
     backgroundImage: `url(${imageUrl})`,
     backgroundSize: `${COLS*100}px ${ROWS*100}px`,
-    backgroundPosition: `-${x}px -${y}px`
+    backgroundPosition: `-${x}px -${y}px`,
+    width: '100%', height: '100%'
   });
 
   cell.draggable = true;
@@ -232,18 +224,13 @@ function makePiece(i, imageUrl) {
 function handleDropOnSlot(e, targetSlot) {
   e.preventDefault();
   if (!draggedPiece) return;
-  if (targetSlot.classList.contains('locked')) return;        // can't drop into locked slot
-  if (sourceSlot?.classList.contains('locked')) return;       // can't move out of locked slot
+  if (targetSlot.classList.contains('locked')) return;
+  if (sourceSlot?.classList.contains('locked')) return;
 
   const occupant = targetSlot.firstElementChild;
-
-  // move dragged piece into targetSlot
   targetSlot.appendChild(draggedPiece);
-
-  // if target had a piece, send it to the sourceSlot (swap)
   if (occupant) sourceSlot.appendChild(occupant);
 
-  // re-evaluate locks for both involved slots
   checkAndLockSlot(targetSlot);
   if (sourceSlot) checkAndLockSlot(sourceSlot);
 }
@@ -263,15 +250,9 @@ function checkAndLockSlot(slot) {
   }
 }
 
-function checkSolved() {
-  const slots = Array.from(puzzleGrid.children);
-  return slots.every(s => s.classList.contains('locked'));
-}
-
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
 
-  // 1) create all slots (fixed positions)
   const slots = [];
   for (let i = 0; i < ROWS * COLS; i++) {
     const slot = makeSlot(i);
@@ -279,15 +260,13 @@ function buildPuzzle(imageUrl) {
     puzzleGrid.appendChild(slot);
   }
 
-  // 2) create all pieces
   const pieces = [];
   for (let i = 0; i < ROWS * COLS; i++) pieces.push(makePiece(i, imageUrl));
   shuffle(pieces);
 
-  // 3) place pieces into slots randomly
   for (let i = 0; i < slots.length; i++) {
     slots[i].appendChild(pieces[i]);
-    checkAndLockSlot(slots[i]); // lock if by chance correct initially
+    checkAndLockSlot(slots[i]);
   }
 }
 
@@ -332,12 +311,23 @@ if (startBtn) {
   });
 }
 
+// ── Gateway warm-up helper ────────────────────────────
+async function warm(url, tries = 3) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) return true;
+    } catch (_) {}
+    await new Promise(r => setTimeout(r, 600 * (i + 1))); // backoff
+  }
+  return false;
+}
+
 // ── MINT SNAPSHOT via SERVER API ──────────────────────
 async function mintSnapshot() {
   try {
     if (!puzzleGrid.children.length) throw new Error('No puzzle to mint');
 
-    // ensure the image is loaded before snapshot
     const firstSlot = puzzleGrid.firstElementChild;
     const firstPiece = firstSlot?.firstElementChild;
     const bg = firstPiece?.style?.backgroundImage;
@@ -351,17 +341,27 @@ async function mintSnapshot() {
     });
 
     const snapshot = canvas.toDataURL('image/png');
-    const apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
 
+    const apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
     const res = await fetch(`${apiBase}/api/upload`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: snapshot })
     });
-    if (!res.ok) { let msg='Upload failed'; try{const j=await res.json(); msg=j.error||msg;}catch{} throw new Error(msg); }
+
+    if (!res.ok) {
+      let msg = 'Upload failed';
+      try { const j = await res.json(); msg = j.error || msg; } catch {}
+      throw new Error(msg);
+    }
 
     const upload = await res.json();
-    const metaUri = upload.uri;
-    if (!metaUri) throw new Error('No metadata URI returned');
+    let metaUri = upload.uri;
+    const imgGateway = upload.imageGateway;
+
+    // warm both metadata and image before minting
+    await warm(metaUri, 3);
+    if (imgGateway) await warm(imgGateway, 2);
 
     mintBtn.disabled = true;
     const tx = await contract.mintNFT(await signer.getAddress(), metaUri);
