@@ -1,4 +1,3 @@
-
 /* Reset & Base */
 *,
 *::before,
@@ -325,5 +324,40 @@ body::before {
 
   .preview img {
     max-width: 280px;
+  }
+}
+
+/* ==== Stability patches (appended) ==== */
+
+/* prevent text/image selection + native image drag while dragging pieces */
+body, .grid, .cell {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* hint the browser to keep layout stable */
+.grid { will-change: contents; }
+.cell { will-change: transform; }
+
+/* when dragging, freeze transforms so pieces don't "bounce" */
+.cell.dragging {
+  transform: none !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+  opacity: 0.9;
+  cursor: grabbing;
+  box-shadow: 0 0 0 2px rgba(102,126,234,.25), 0 2px 8px rgba(0,0,0,.15);
+}
+
+.cell.dragging:hover,
+.cell.dragging:active {
+  transform: none !important;
+}
+
+/* respect reduced motion users */
+@media (prefers-reduced-motion: reduce) {
+  .cell, .cell:hover, .cell:active {
+    transition: none !important;
+    transform: none !important;
   }
 }
