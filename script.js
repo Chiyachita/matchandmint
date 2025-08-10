@@ -64,7 +64,7 @@ let imageList = [];
 let timerHandle, timeLeft = 45;
 let draggedPiece = null;
 let sourceSlot = null;
-const ROWS = 4, COLS = 4;
+const ROWS = 3, COLS = 3; // CHANGED from 4x4 to 3x3
 
 // ── HELPERS: Providers ────────────────────────────────
 function brandName(p) {
@@ -185,7 +185,7 @@ function makeSlot(i) {
   return slot;
 }
 
-// CHANGED: now uses real tile size instead of hardcoded 100px
+// uses real tile size instead of hardcoded 100px
 function makePiece(i, imageUrl, tileW, tileH) {
   const cell = document.createElement('div');
   cell.className = 'cell';
@@ -253,7 +253,7 @@ function checkAndLockSlot(slot) {
   }
 }
 
-// CHANGED: measure actual slot size and use it for background math
+// measure actual slot size and use it for background math
 function buildPuzzle(imageUrl) {
   puzzleGrid.innerHTML = '';
 
