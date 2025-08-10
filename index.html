@@ -34,10 +34,15 @@
     </div>
 
     <div class="timer">⏲️ Time Left: <span id="timeLeft">45</span>s</div>
-    <div id="puzzleGrid" class="grid"></div>
-    <div class="preview">
-      <h3>Reference Picture</h3>
-      <img id="previewImg" src="preview.png" alt="Puzzle Reference" />
+
+    <!-- NEW: put preview on the LEFT of the puzzle -->
+    <div class="game-row">
+      <div class="preview">
+        <h3>Reference Picture</h3>
+        <img id="previewImg" src="preview.png" alt="Puzzle Reference" />
+      </div>
+
+      <div id="puzzleGrid" class="grid"></div>
     </div>
   </div>
 
@@ -72,10 +77,8 @@
         });
       }
 
-      // try immediately (after defer scripts, DOM is parsed)
       document.addEventListener('DOMContentLoaded', wireNow);
 
-      // last resort: if script.js defines connectInjected later, we still bind
       var tries = 0;
       var t = setInterval(function() {
         tries++;
