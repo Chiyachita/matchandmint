@@ -314,11 +314,18 @@ if (startBtn) {
     startBtn.disabled = true;
     mintBtn.disabled = false;
     restartBtn.disabled = true;
+
     if (!imageList.length) await loadImageList();
+
     const imageUrl = pickRandomImage();
     await preloadImage(imageUrl);
+
+    // ✅ Always set preview to the clean full image
     previewImg.src = imageUrl;
+
+    // Build the puzzle with slices of the same image
     buildPuzzle(imageUrl);
+
     startTimer();
   });
 }
