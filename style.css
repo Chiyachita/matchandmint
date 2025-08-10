@@ -203,15 +203,25 @@ body::before {
   font-size: 1.3em;
 }
 
-/* Puzzle Grid */
+/* NEW: row layout to place preview at the left of the grid */
+.game-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 2rem;
+}
+
+/* Puzzle Grid — CHANGED to 3×3 */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* was 4 */
+  grid-template-rows: repeat(3, 1fr);    /* was 4 */
   gap: 6px;
   width: 420px;
   height: 420px;
-  margin: 0 auto 2rem;
+  /* override centering since it's inside a row now */
+  margin: 0;
   background: rgba(0, 0, 0, 0.05);
   padding: 8px;
   border-radius: 16px;
@@ -265,6 +275,13 @@ body::before {
 }
 
 /* Responsive */
+@media (max-width: 900px) {
+  .game-row {
+    flex-direction: column;   /* stack on small screens */
+    align-items: center;
+  }
+}
+
 @media (max-width: 600px) {
   body {
     padding: 1rem;
